@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Assessment & Treatment Plan Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .result-section {
+            min-height: 300px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .prescription {
+            font-family: 'Georgia', serif;
+            border: 1px solid #000;
+            padding: 20px;
+            position: relative;
+            background-color: #fff;
+            background-image: linear-gradient(45deg, #f5f5f5 25%, transparent 25%, transparent 75%, #f5f5f5 75%, #f5f5f5),
+                linear-gradient(45deg, #f5f5f5 25%, transparent 25%, transparent 75%, #f5f5f5 75%, #f5f5f5);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            background-blend-mode: multiply;
+            background-attachment: fixed;
+        }
+
+        .prescription::before {
+            content: "";
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="10" y="50" font-family="Arial" font-size="14" opacity="0.1" transform="rotate(-45 50 50)">Confidential Medical Record</text></svg>');
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            z-index: 0;
+            opacity: 0.05;
+        }
+
+        .prescription .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border: none;
+        }
+
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background-color: #4361ee;
+            border-color: #4361ee;
+        }
+
+        .btn-success {
+            background-color: #38b000;
+            border-color: #38b000;
+        }
+
+        h1 {
+            color: #3a0ca3;
+            font-weight: bold;
+        }
+
+        .assessment-pills {
+            margin-bottom: 15px;
+        }
+
+        .assessment-pill {
+            display: inline-block;
+            padding: 5px 15px;
+            margin: 0 5px 5px 0;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .pill-condition {
+            background-color: #ffd166;
+            color: #000;
+        }
+
+        .pill-severity {
+            background-color: #ef476f;
+            color: white;
+        }
+
+        .pill-risk {
+            background-color: #073b4c;
+            color: white;
+        }
+
+        .diagnosis-box {
+            border-left: 4px solid #4361ee;
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            margin-bottom: 15px;
+        }
+
+        .recommendation-item {
+            padding: 8px 0;
+            border-bottom: 1px dotted #dee2e6;
+        }
+
+        .recommendation-item:last-child {
+            border-bottom: none;
+        }
+
+        .print-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Mental Health Assessment & Treatment Plan Generator</h1>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-brain me-2"></i>Emotion Analysis Input</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="emotionForm">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label for="facialEmotion" class="form-label">Facial Emotion</label>
+                                    <select class="form-select" id="facialEmotion" required>
+                                        <option value="Happy">Happy</option>
+                                        <option value="Sad">Sad</option>
+                                        <option value="Angry">Angry</option>
+                                        <option value="Fear">Fear</option>
+                                        <option value="Disgust">Disgust</option>
+                                        <option value="Surprise">Surprise</option>
+                                        <option value="Neutral">Neutral</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label for="facialConfidence" class="form-label">Confidence (0-1)</label>
+                                    <input type="number" class="form-control" id="facialConfidence" min="0" max="1"
+                                        step="0.01" value="0.85" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label for="speechEmotion" class="form-label">Speech Emotion</label>
+                                    <select class="form-select" id="speechEmotion" required>
+                                        <option value="Happy">Happy</option>
+                                        <option value="Sad">Sad</option>
+                                        <option value="Angry">Angry</option>
+                                        <option value="Fear">Fear</option>
+                                        <option value="Disgust">Disgust</option>
+                                        <option value="Surprise">Surprise</option>
+                                        <option value="Neutral">Neutral</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label for="speechConfidence" class="form-label">Confidence (0-1)</label>
+                                    <input type="number" class="form-control" id="speechConfidence" min="0" max="1"
+                                        step="0.01" value="0.75" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label for="combinedEmotion" class="form-label">Combined Emotion</label>
+                                    <select class="form-select" id="combinedEmotion" required>
+                                        <option value="Happy">Happy</option>
+                                        <option value="Sad">Sad</option>
+                                        <option value="Angry">Angry</option>
+                                        <option value="Fear">Fear</option>
+                                        <option value="Disgust">Disgust</option>
+                                        <option value="Surprise">Surprise</option>
+                                        <option value="Neutral">Neutral</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label for="combinedConfidence" class="form-label">Confidence (0-1)</label>
+                                    <input type="number" class="form-control" id="combinedConfidence" min="0" max="1"
+                                        step="0.01" value="0.80" required>
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6><i class="fas fa-user-circle me-2"></i>Patient Information</h6>
+
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label for="patientName" class="form-label">Patient Name</label>
+                                    <input type="text" class="form-control" id="patientName"
+                                        placeholder="Enter patient name">
+                                </div>
+                                <div class="col">
+                                    <label for="patientAge" class="form-label">Age</label>
+                                    <input type="number" class="form-control" id="patientAge" placeholder="Age">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label for="patientGender" class="form-label">Gender</label>
+                                    <select class="form-select" id="patientGender">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label for="symptomDuration" class="form-label">Symptom Duration</label>
+                                    <input type="text" class="form-control" id="symptomDuration"
+                                        placeholder="e.g., 2 weeks">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="additionalNotes" class="form-label">Additional Notes</label>
+                                <textarea class="form-control" id="additionalNotes" rows="3"
+                                    placeholder="Enter any additional information, symptoms, or concerns..."></textarea>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary"><i
+                                        class="fas fa-stethoscope me-2"></i>Analyze Mental Health</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div id="analysisResult" class="result-section">
+                    <h4 class="text-center text-secondary"><i class="fas fa-diagnoses me-2"></i>Mental Health Analysis
+                        will appear here</h4>
+                </div>
+
+                <div class="d-grid gap-2 mt-3">
+                    <button id="generatePrescription" class="btn btn-success" disabled>
+                        <i class="fas fa-file-medical me-2"></i>Generate Treatment Plan
+                    </button>
+                </div>
+
+                <div id="prescriptionResult" class="result-section mt-3 prescription" style="display: none;">
+                    <button id="printPrescription" class="btn btn-sm btn-outline-secondary print-btn">
+                        <i class="fas fa-print me-1"></i> Print
+                    </button>
+                    <div class="content">
+                        <h4 class="text-center text-secondary">Treatment Plan will appear here</h4>
+                    </div>
+                </div>
+
+                <div id="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Processing your request...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let mentalHealthAssessment = null;
+
+        document.getElementById('emotionForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('generatePrescription').disabled = true;
+            document.getElementById('analysisResult').innerHTML = '<h4 class="text-center text-secondary">Processing...</h4>';
+
+            // Collect form data
+            const data = {
+                facial_emotion: document.getElementById('facialEmotion').value,
+                facial_confidence: parseFloat(document.getElementById('facialConfidence').value),
+                speech_emotion: document.getElementById('speechEmotion').value,
+                speech_confidence: parseFloat(document.getElementById('speechConfidence').value),
+                combined_emotion: document.getElementById('combinedEmotion').value,
+                combined_confidence: parseFloat(document.getElementById('combinedConfidence').value),
+                patient_age: document.getElementById('patientAge').value,
+                patient_gender: document.getElementById('patientGender').value,
+                symptom_duration: document.getElementById('symptomDuration').value,
+                additional_notes: document.getElementById('additionalNotes').value
+            };
+
+            // Send data to the backend
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading state
+                    document.getElementById('loading').style.display = 'none';
+
+                    // Store mental health assessment for prescription generation
+                    mentalHealthAssessment = data;
+
+                    // Display analysis result
+                    let resultHtml = `
+                    <h4 class="mb-3"><i class="fas fa-clipboard-check me-2"></i>Clinical Assessment</h4>
+                    <p class="text-muted small"><i class="fas fa-clock me-1"></i> ${data.timestamp || 'N/A'}</p>
+                    
+                    <div class="assessment-pills">
+                        <span class="assessment-pill pill-condition">${data.condition || 'No condition specified'}</span>
+                        <span class="assessment-pill pill-severity">${data.severity || 'Unknown severity'}</span>
+                        <span class="assessment-pill pill-risk">Risk: ${data.risk_assessment ? 'Present' : 'Not specified'}</span>
+                    </div>
+                    
+                    <div class="diagnosis-box">
+                        <h5 class="mb-2">Clinical Impression</h5>
+                        <p>${data.mental_health_assessment || 'No assessment provided'}</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col">
+                            <h5><i class="fas fa-list-ul me-2"></i>Recommendations:</h5>
+                            <ul class="list-unstyled">
+                `;
+
+                    if (data.recommendations && Array.isArray(data.recommendations)) {
+                        data.recommendations.forEach(rec => {
+                            resultHtml += `<li class="recommendation-item"><i class="fas fa-check-circle me-2 text-success"></i>${rec}</li>`;
+                        });
+                    } else {
+                        resultHtml += '<li class="recommendation-item text-muted">No specific recommendations provided</li>';
+                    }
+
+                    resultHtml += `
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-comments me-2"></i>Therapy Options:</h5>
+                            <ul class="list-unstyled">
+                `;
+
+                    if (data.therapy_options && Array.isArray(data.therapy_options)) {
+                        data.therapy_options.forEach(option => {
+                            resultHtml += `<li class="recommendation-item"><i class="fas fa-comment-medical me-2 text-primary"></i>${option}</li>`;
+                        });
+                    } else {
+                        resultHtml += '<li class="recommendation-item text-muted">No specific therapy options provided</li>';
+                    }
+
+                    resultHtml += `
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-pills me-2"></i>Medication Considerations:</h5>
+                            <ul class="list-unstyled">
+                `;
+
+                    if (data.medication_considerations && Array.isArray(data.medication_considerations)) {
+                        data.medication_considerations.forEach(med => {
+                            resultHtml += `<li class="recommendation-item"><i class="fas fa-capsules me-2 text-warning"></i>${med}</li>`;
+                        });
+                    } else {
+                        resultHtml += '<li class="recommendation-item text-muted">No medication considerations provided</li>';
+                    }
+
+                    resultHtml += `
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-calendar-check me-2"></i>Follow-up:</h5>
+                            <p>${data.follow_up || 'No follow-up recommendations provided'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-chart-line me-2"></i>Prognosis:</h5>
+                            <p>${data.prognosis || 'No prognosis provided'}</p>
+                        </div>
+                    </div>
+                `;
+
+                    document.getElementById('analysisResult').innerHTML = resultHtml;
+
+                    // Enable prescription generation button
+                    document.getElementById('generatePrescription').disabled = false;
+                })
+                .catch(error => {
+                    // Hide loading state
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('analysisResult').innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading">Error!</h4>
+                        <p>Failed to analyze emotions: ${error}</p>
+                    </div>
+                `;
+                });
+        });
+
+        document.getElementById('generatePrescription').addEventListener('click', function () {
+            // Check if we have the mental health assessment
+            if (!mentalHealthAssessment) {
+                alert('Please perform a mental health analysis first.');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('prescriptionResult').style.display = 'none';
+
+            // Collect data for prescription
+            const data = {
+                patient_name: document.getElementById('patientName').value || 'Anonymous Patient',
+                patient_age: document.getElementById('patientAge').value || 'Unknown',
+                patient_gender: document.getElementById('patientGender').value || 'Unknown',
+                mental_assessment: mentalHealthAssessment
+            };
+
+            // Send data to the backend
+            fetch('/generate_prescription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading state
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('prescriptionResult').style.display = 'block';
+
+                    // Format date from the assessment_date field or use current date
+                    const assessmentDate = data.patient_details?.assessment_date === "[Current Date]"
+                        ? data.generation_date
+                        : data.patient_details?.assessment_date || data.generation_date;
+
+                    // Display prescription result
+                    let prescriptionHtml = `
+                    <div class="content">
+                        <div class="text-center mb-4">
+                            <h2>${data.prescription_title || 'Mental Health Treatment Plan'}</h2>
+                            <p class="text-muted">Generated on: ${data.generation_date || new Date().toLocaleDateString()}</p>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2">Patient Information</h5>
+                                <p><strong>Name:</strong> ${data.patient_details?.name || 'Anonymous Patient'}</p>
+                                <p><strong>Age:</strong> ${data.patient_details?.age || 'Unknown'}</p>
+                                <p><strong>Gender:</strong> ${data.patient_details?.gender || 'Unknown'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2">Assessment Details</h5>
+                                <p><strong>Date:</strong> ${assessmentDate || 'Unknown'}</p>
+                                <p><strong>Diagnosis:</strong> ${data.diagnosis?.primary || 'No specific diagnosis provided'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Clinical Formulation</h5>
+                            <p>${data.clinical_formulation || 'No clinical formulation provided'}</p>
+                            
+                            <h6>Differential Diagnoses:</h6>
+                            <p>${data.diagnosis?.differential || 'None specified'}</p>
+                            
+                            <h6>Contributing Factors:</h6>
+                            <ul>
+                `;
+
+                    if (data.diagnosis?.contributing_factors && Array.isArray(data.diagnosis.contributing_factors)) {
+                        data.diagnosis.contributing_factors.forEach(factor => {
+                            prescriptionHtml += `<li>${factor}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No specific factors identified</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Treatment Plan</h5>
+                            
+                            <h6>Immediate Recommendations:</h6>
+                            <ul>
+                `;
+
+                    if (data.treatment_plan?.immediate_recommendations &&
+                        Array.isArray(data.treatment_plan.immediate_recommendations)) {
+                        data.treatment_plan.immediate_recommendations.forEach(rec => {
+                            prescriptionHtml += `<li>${rec}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No immediate action required</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                            
+                            <h6>Psychotherapy:</h6>
+                            <p>${data.treatment_plan?.psychotherapy || 'No specific psychotherapy recommended'}</p>
+                            
+                            <h6>Medication Considerations:</h6>
+                            <p>${data.treatment_plan?.medication_considerations || 'No medications recommended at this time'}</p>
+                            
+                            <h6>Lifestyle Modifications:</h6>
+                            <ul>
+                `;
+
+                    if (data.treatment_plan?.lifestyle_modifications &&
+                        Array.isArray(data.treatment_plan.lifestyle_modifications)) {
+                        data.treatment_plan.lifestyle_modifications.forEach(mod => {
+                            prescriptionHtml += `<li>${mod}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No specific lifestyle modifications recommended</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                            
+                            <h6>Self-Care Strategies:</h6>
+                            <ul>
+                `;
+
+                    if (data.treatment_plan?.self_care_strategies &&
+                        Array.isArray(data.treatment_plan.self_care_strategies)) {
+                        data.treatment_plan.self_care_strategies.forEach(strategy => {
+                            prescriptionHtml += `<li>${strategy}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No specific self-care strategies recommended</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Monitoring Plan</h5>
+                            <p><strong>Follow-up:</strong> ${data.monitoring_plan?.follow_up || 'No specific follow-up scheduled'}</p>
+                            
+                            <h6>Assessment Tools:</h6>
+                            <ul>
+                `;
+
+                    if (data.monitoring_plan?.assessment_tools &&
+                        Array.isArray(data.monitoring_plan.assessment_tools)) {
+                        data.monitoring_plan.assessment_tools.forEach(tool => {
+                            prescriptionHtml += `<li>${tool}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No specific assessment tools recommended</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                            
+                            <h6>Warning Signs Requiring Attention:</h6>
+                            <ul>
+                `;
+
+                    if (data.monitoring_plan?.warning_signs &&
+                        Array.isArray(data.monitoring_plan.warning_signs)) {
+                        data.monitoring_plan.warning_signs.forEach(sign => {
+                            prescriptionHtml += `<li>${sign}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No specific warning signs identified</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Additional Resources</h5>
+                            <ul>
+                `;
+
+                    if (data.additional_resources && Array.isArray(data.additional_resources)) {
+                        data.additional_resources.forEach(resource => {
+                            prescriptionHtml += `<li>${resource}</li>`;
+                        });
+                    } else {
+                        prescriptionHtml += '<li>No additional resources specified</li>';
+                    }
+
+                    prescriptionHtml += `
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Provider Notes</h5>
+                            <p><em>${data.provider_notes || 'No additional provider notes'}</em></p>
+                        </div>
+                        
+                        <div class="text-center mt-5 border-top pt-3">
+                            <p><em>This is an AI-generated treatment plan and does not replace professional medical advice.
+                            Please consult with a qualified healthcare provider before making any changes to your health regimen.</em></p>
+                        </div>
+                    </div>
+                `;
+
+                    document.getElementById('prescriptionResult').innerHTML = prescriptionHtml;
+                })
+                .catch(error => {
+                    // Hide loading state
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('prescriptionResult').style.display = 'block';
+                    document.getElementById('prescriptionResult').innerHTML = `
+                    <div class="content">
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">Error!</h4>
+                            <p>Failed to generate treatment plan: ${error}</p>
+                        </div>
+                    </div>
+                `;
+                });
+        });
+
+        // Add print functionality
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.id === 'printPrescription') {
+                window.print();
+            }
+        });
+    </script>
+</body>
+
+</html>
