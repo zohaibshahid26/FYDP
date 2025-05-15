@@ -17,20 +17,6 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("Please set the GOOGLE_API_KEY environment variable.")
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-# Add a health check endpoint for API connectivity testing
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        'status': 'ok',
-        'message': 'Mental Health Analysis API is running',
-        'timestamp': datetime.now().isoformat()
-    })
-
-# Add endpoint to directly retrieve content for RAG testing
 @app.route('/retrieve_content', methods=['POST'])
 def retrieve_content():
     data = request.json

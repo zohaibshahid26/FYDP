@@ -55,11 +55,65 @@ def generate_gemini_response(prompt, model="gemini-2.0-flash", temperature=0.3):
         if response_text.startswith("```json") and response_text.endswith("```"):
             response_text = response_text[7:-3].strip()
         
-        result = json.loads(response_text)
+        # Log the raw response for debugging
+        logger.debug(f"Raw response: {response_text}")
         
-        logger.info(f"Generated response in {time.time() - start_time:.2f} seconds")
-        
-        return result
+        try:
+            result = json.loads(response_text)
+            
+            # Handle case where result is a list instead of a dictionary
+            if isinstance(result, list):
+                logger.warning(f"Received list instead of dict: {result}")
+                
+                # If it's a non-empty list, convert it to a dictionary if possible
+                if result and isinstance(result[0], dict):
+                    logger.info("Converting list of dicts to a single dict (using first element)")
+                    result = result[0]
+                else:
+                    # Create a dictionary wrapper for the list
+                    logger.info("Wrapping list result in a dictionary")
+                    result = {
+                        "results": result,
+                        "error": "Response was a list, expected a dictionary. Wrapped for compatibility."
+                    }
+            
+            # Validate that result is now a dictionary
+            if not isinstance(result, dict):
+                logger.error(f"Invalid response format after conversion: expected dict, got {type(result)}")
+                return {"error": "Invalid response format from AI model", "raw_type": str(type(result))}
+            
+            # Ensure arrays are properly initialized
+            for field in ["recommendations", "therapy_options", "medication_considerations"]:
+                if field in result and not isinstance(result[field], list):
+                    logger.warning(f"Converting {field} to list: was {type(result[field])}")
+                    # If the field exists but isn't a list, convert it to a list with one item
+                    if result[field]:  # If not empty/null
+                        result[field] = [result[field]]
+                    else:
+                        result[field] = []
+            
+            logger.info(f"Generated response in {time.time() - start_time:.2f} seconds")
+            return result
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error: {e}")
+            logger.error(f"Problematic response text: {response_text}")
+            # Try to clean up the response by removing any non-JSON content
+            clean_response = response_text.split('```')[0].strip()
+            if clean_response:
+                try:
+                    result = json.loads(clean_response)
+                    # Check if the result is a list and handle it
+                    if isinstance(result, list):
+                        if result and isinstance(result[0], dict):
+                            result = result[0]
+                        else:
+                            result = {"results": result}
+                    return result
+                except:
+                    pass
+            return {"error": f"Failed to parse response as JSON: {str(e)}", "raw_response": response_text[:500]}
+            
     except Exception as e:
         logger.error(f"Error generating response: {str(e)}")
         return {"error": str(e)}
