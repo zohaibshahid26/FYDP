@@ -1,5 +1,6 @@
 // Types for emotion analysis data
 export interface EmotionData {
+  patient_name: string; // Added patient name field
   facial_emotion: string;
   facial_confidence: number;
   speech_emotion: string;
@@ -14,6 +15,12 @@ export interface EmotionData {
 
 // Types for analysis response
 export interface AnalysisResponse {
+  patient_information?: {
+    name: string;
+    age: string;
+    gender: string;
+    assessment_date: string;
+  };
   mental_health_assessment: string;
   differential_diagnosis: string;
   condition: string;

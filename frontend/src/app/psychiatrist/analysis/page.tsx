@@ -17,6 +17,7 @@ export default function AnalysisPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState<EmotionData>({
+    patient_name: "",
     facial_emotion: "",
     facial_confidence: 0,
     speech_emotion: "",
@@ -117,138 +118,24 @@ export default function AnalysisPage() {
           <div className="space-y-6">
             <div className="pb-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                <span className="text-blue-500 mr-2">01</span> Emotion Data
-              </h2>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Facial Emotion
-              </label>
-              <select
-                name="facial_emotion"
-                value={formData.facial_emotion}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Select Emotion</option>
-                <option value="happy">Happy</option>
-                <option value="sad">Sad</option>
-                <option value="angry">Angry</option>
-                <option value="fearful">Fearful</option>
-                <option value="disgusted">Disgusted</option>
-                <option value="surprised">Surprised</option>
-                <option value="neutral">Neutral</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Facial Confidence (%)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  name="facial_confidence"
-                  value={formData.facial_confidence || 0} // Ensure value is never NaN
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="0"
-                  max="100"
-                  required
-                />
-                <span className="absolute right-3 top-3 text-gray-400">%</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Speech Emotion
-              </label>
-              <select
-                name="speech_emotion"
-                value={formData.speech_emotion}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Select Emotion</option>
-                <option value="happy">Happy</option>
-                <option value="sad">Sad</option>
-                <option value="angry">Angry</option>
-                <option value="fearful">Fearful</option>
-                <option value="disgusted">Disgusted</option>
-                <option value="surprised">Surprised</option>
-                <option value="neutral">Neutral</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Speech Confidence (%)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  name="speech_confidence"
-                  value={formData.speech_confidence || 0} // Ensure value is never NaN
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="0"
-                  max="100"
-                  required
-                />
-                <span className="absolute right-3 top-3 text-gray-400">%</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Combined Emotion (Optional)
-              </label>
-              <select
-                name="combined_emotion"
-                value={formData.combined_emotion}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Auto (Use Facial)</option>
-                <option value="happy">Happy</option>
-                <option value="sad">Sad</option>
-                <option value="angry">Angry</option>
-                <option value="fearful">Fearful</option>
-                <option value="disgusted">Disgusted</option>
-                <option value="surprised">Surprised</option>
-                <option value="neutral">Neutral</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Combined Confidence (%) (Optional)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  name="combined_confidence"
-                  value={formData.combined_confidence || 0} // Ensure value is never NaN
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="0"
-                  max="100"
-                />
-                <span className="absolute right-3 top-3 text-gray-400">%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="pb-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                <span className="text-blue-500 mr-2">02</span> Subject
+                <span className="text-blue-500 mr-2">01</span> Patient
                 Information
               </h2>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="patient_name"
+                value={formData.patient_name}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+                placeholder="Enter patient's full name"
+              />
             </div>
 
             <div>
@@ -262,6 +149,7 @@ export default function AnalysisPage() {
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
+                placeholder="e.g., 35"
               />
             </div>
 
@@ -302,20 +190,149 @@ export default function AnalysisPage() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <span className="text-blue-500 mr-2">02</span> Emotion Data
+              </h2>
+            </div>
 
             <div>
               <label className="block mb-2 font-medium text-gray-700">
-                Additional Notes
+                Facial Emotion
               </label>
-              <textarea
-                name="additional_notes"
-                value={formData.additional_notes}
+              <select
+                name="facial_emotion"
+                value={formData.facial_emotion}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-40"
-                placeholder="Enter any additional observations or notes about condition, behavior, or history"
-              />
+                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="">Select Emotion</option>
+                <option value="happy">Happy</option>
+                <option value="sad">Sad</option>
+                <option value="angry">Angry</option>
+                <option value="fearful">Fearful</option>
+                <option value="disgusted">Disgusted</option>
+                <option value="surprised">Surprised</option>
+                <option value="neutral">Neutral</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Facial Confidence (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  name="facial_confidence"
+                  value={formData.facial_confidence || 0}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min="0"
+                  max="100"
+                  required
+                />
+                <span className="absolute right-3 top-3 text-gray-400">%</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Speech Emotion
+              </label>
+              <select
+                name="speech_emotion"
+                value={formData.speech_emotion}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="">Select Emotion</option>
+                <option value="happy">Happy</option>
+                <option value="sad">Sad</option>
+                <option value="angry">Angry</option>
+                <option value="fearful">Fearful</option>
+                <option value="disgusted">Disgusted</option>
+                <option value="surprised">Surprised</option>
+                <option value="neutral">Neutral</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Speech Confidence (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  name="speech_confidence"
+                  value={formData.speech_confidence || 0}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min="0"
+                  max="100"
+                  required
+                />
+                <span className="absolute right-3 top-3 text-gray-400">%</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Combined Emotion (Optional)
+              </label>
+              <select
+                name="combined_emotion"
+                value={formData.combined_emotion}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Auto (Use Facial)</option>
+                <option value="happy">Happy</option>
+                <option value="sad">Sad</option>
+                <option value="angry">Angry</option>
+                <option value="fearful">Fearful</option>
+                <option value="disgusted">Disgusted</option>
+                <option value="surprised">Surprised</option>
+                <option value="neutral">Neutral</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-gray-700">
+                Combined Confidence (%) (Optional)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  name="combined_confidence"
+                  value={formData.combined_confidence || 0}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min="0"
+                  max="100"
+                />
+                <span className="absolute right-3 top-3 text-gray-400">%</span>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-8">
+          <label className="block mb-2 font-medium text-gray-700">
+            Additional Notes
+          </label>
+          <textarea
+            name="additional_notes"
+            value={formData.additional_notes}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-40"
+            placeholder="Enter any additional observations or notes about condition, behavior, or history"
+          />
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end">

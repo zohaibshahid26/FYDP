@@ -304,18 +304,21 @@ export default function AnalysisResultsPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Name</p>
-                    <p className="font-medium">John Doe</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Date of Assessment</p>
                     <p className="font-medium">
-                      {new Date().toLocaleDateString()}
+                      {analysisResult.patient_information?.name ||
+                        "Anonymous Patient"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Assessment ID</p>
+                    <p className="text-sm text-gray-500">Age</p>
                     <p className="font-medium">
-                      MH-{Math.floor(100000 + Math.random() * 900000)}
+                      {analysisResult.patient_information?.age || "Unknown"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Gender</p>
+                    <p className="font-medium">
+                      {analysisResult.patient_information?.gender || "Unknown"}
                     </p>
                   </div>
                 </div>

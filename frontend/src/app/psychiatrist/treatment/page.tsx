@@ -8,9 +8,9 @@ import {
   FiFileText,
   FiAlertCircle,
   FiCheckCircle,
-  FiUser,
   FiArrowLeft,
   FiActivity,
+  FiUser,
 } from "react-icons/fi";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -38,30 +38,34 @@ export default function TreatmentPlanPage() {
         const result = JSON.parse(storedResult) as AnalysisResponse;
         setAnalysisResult(result);
 
-        // Pre-fill the form with data from analysis
-        setFormData((prev) => ({
-          ...prev,
-          mental_assessment: {
-            condition: result.condition,
-            differential_diagnosis: result.differential_diagnosis,
-            severity: result.severity,
-          },
-        }));
+        // Pre-fill the form with all data from analysis including patient information
+        if (result.patient_information) {
+          setFormData({
+            patient_name: result.patient_information.name || "",
+            patient_age: result.patient_information.age || "",
+            patient_gender: result.patient_information.gender || "",
+            mental_assessment: {
+              condition: result.condition,
+              differential_diagnosis: result.differential_diagnosis,
+              severity: result.severity,
+            },
+          });
+        } else {
+          // If patient info is missing, still use the condition data
+          setFormData((prev) => ({
+            ...prev,
+            mental_assessment: {
+              condition: result.condition,
+              differential_diagnosis: result.differential_diagnosis,
+              severity: result.severity,
+            },
+          }));
+        }
       } catch (e) {
         console.error("Error parsing analysis result", e);
       }
     }
   }, []);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +166,45 @@ export default function TreatmentPlanPage() {
         </div>
       )}
 
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white p-8 rounded-xl shadow-lg mb-6"
+      >
+        <h2 className="text-xl font-semibold text-gray-800 flex items-center mb-4">
+          <FiUser className="mr-2 text-purple-600" /> Patient Information
+        </h2>
+
+        {analysisResult.patient_information ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Name</p>
+              <p className="font-medium text-lg">
+                {analysisResult.patient_information.name || "Not specified"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Age</p>
+              <p className="font-medium text-lg">
+                {analysisResult.patient_information.age || "Not specified"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Gender</p>
+              <p className="font-medium text-lg">
+                {analysisResult.patient_information.gender || "Not specified"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-amber-600">
+            Patient information not available in the analysis data. The
+            treatment plan will be generated with limited personalization.
+          </p>
+        )}
+      </motion.div>
+
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
         <div className="flex">
           <div className="flex-shrink-0">
@@ -188,81 +231,33 @@ export default function TreatmentPlanPage() {
         className="bg-white p-8 rounded-xl shadow-lg"
       >
         <div className="space-y-6">
-          <div className="pb-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-              <FiUser className="mr-2 text-purple-600" /> Subject Information
+          <div className="border-b border-gray-200 pb-4">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Treatment Plan Generation
             </h2>
-            <p className="text-gray-700 text-sm mt-1">
-              Enter personal details for the treatment plan
+            <p className="text-gray-600 mt-1">
+              Click the button below to generate a comprehensive treatment plan
+              based on the analysis results
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Name
-              </label>
-              <input
-                type="text"
-                name="patient_name"
-                value={formData.patient_name}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-gray-700">
-                Age
-              </label>
-              <input
-                type="text"
-                name="patient_age"
-                value={formData.patient_age}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-2 font-medium text-gray-700">
-              Gender
-            </label>
-            <select
-              name="patient_gender"
-              value={formData.patient_gender}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              required
+          <div className="flex items-center mb-4">
+            <motion.div
+              animate={{ rotate: [0, 10, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 mr-3"
             >
-              <option value="">Select Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div className="border-t border-gray-200 pt-6 mt-6">
-            <div className="flex items-center mb-4">
-              <motion.div
-                animate={{ rotate: [0, 10, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 mr-3"
-              >
-                <FiCheckCircle size={20} />
-              </motion.div>
-              <div>
-                <h3 className="font-semibold text-gray-800">
-                  AI-Generated Plan
-                </h3>
-                <p className="text-gray-700 text-sm mt-1">
-                  Our AI system will generate a comprehensive treatment plan
-                  based on your analysis results and personal information
-                </p>
-              </div>
+              <FiCheckCircle size={20} />
+            </motion.div>
+            <div>
+              <h3 className="font-semibold text-gray-800">
+                AI-Generated Treatment Plan
+              </h3>
+              <p className="text-gray-700 text-sm mt-1">
+                Our AI system will generate a comprehensive treatment plan based
+                on the analysis of {formData.patient_name || "the patient"}'s
+                condition
+              </p>
             </div>
           </div>
 
