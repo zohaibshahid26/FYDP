@@ -1,18 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, JSX } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PrescriptionResponse } from "@/types/psychiatristTypes";
-import { FiPrinter, FiArrowLeft, FiFileText } from "react-icons/fi";
+import { TreatmentResponse } from "@/types/psychiatristTypes";
+import {
+  FiPrinter,
+  FiArrowLeft,
+  FiFileText,
+  FiCheckCircle,
+  FiList,
+  FiMessageSquare,
+  FiActivity,
+  FiShield,
+  FiAlertCircle,
+} from "react-icons/fi";
+import { downloadPdfReport } from "@/api/psychiatristService";
+import { motion } from "framer-motion";
 
 export default function TreatmentPlanResultsPage() {
   const router = useRouter();
-  const [treatmentPlan, setTreatmentPlan] =
-    useState<PrescriptionResponse | null>(null);
+  const [treatmentPlan, setTreatmentPlan] = useState<TreatmentResponse | null>(
+    null
+  );
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    // Retrieve prescription result from localStorage
     const storedResult = localStorage.getItem("prescriptionResult");
 
     if (storedResult) {
@@ -22,7 +35,6 @@ export default function TreatmentPlanResultsPage() {
         console.error("Error parsing treatment plan result", e);
       }
     } else {
-      // Redirect if no result found
       router.push("/psychiatrist/treatment");
     }
   }, [router]);
@@ -35,75 +47,55 @@ export default function TreatmentPlanResultsPage() {
     );
   }
 
-  const printTreatmentPlan = () => {
-    window.print();
+  const printTreatmentPlan = async () => {
+    if (!treatmentPlan) return;
+
+    setIsExporting(true);
+    try {
+      await downloadPdfReport("treatment", treatmentPlan);
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      alert("Failed to export to PDF. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  // Helper function to safely render content that might be an object
-  const renderContent = (content: any) => {
-    if (content === null || content === undefined) {
-      return "";
+  const renderField = (label: string, content: any, icon?: JSX.Element) => {
+    if (
+      content === null ||
+      content === undefined ||
+      (typeof content === "string" && content.trim() === "") ||
+      (Array.isArray(content) && content.length === 0)
+    ) {
+      return null;
     }
 
-    if (typeof content === "object") {
-      // If it's an object with recommendation categories
-      if (
-        content.immediate_recommendations ||
-        content.lifestyle_modifications ||
-        content.medication_considerations ||
-        content.psychotherapy ||
-        content.self_care_strategies
-      ) {
-        return (
-          <div>
-            {content.immediate_recommendations && (
-              <div className="mb-3">
-                <h4 className="font-semibold">Immediate Recommendations:</h4>
-                <p className="whitespace-pre-line">
-                  {content.immediate_recommendations}
-                </p>
-              </div>
-            )}
-            {content.lifestyle_modifications && (
-              <div className="mb-3">
-                <h4 className="font-semibold">Lifestyle Modifications:</h4>
-                <p className="whitespace-pre-line">
-                  {content.lifestyle_modifications}
-                </p>
-              </div>
-            )}
-            {content.medication_considerations && (
-              <div className="mb-3">
-                <h4 className="font-semibold">Medication Considerations:</h4>
-                <p className="whitespace-pre-line">
-                  {content.medication_considerations}
-                </p>
-              </div>
-            )}
-            {content.psychotherapy && (
-              <div className="mb-3">
-                <h4 className="font-semibold">Psychotherapy:</h4>
-                <p className="whitespace-pre-line">{content.psychotherapy}</p>
-              </div>
-            )}
-            {content.self_care_strategies && (
-              <div className="mb-3">
-                <h4 className="font-semibold">Self-Care Strategies:</h4>
-                <p className="whitespace-pre-line">
-                  {content.self_care_strategies}
-                </p>
-              </div>
-            )}
-          </div>
-        );
-      }
-
-      // For other types of objects, convert to string
-      return JSON.stringify(content);
-    }
-
-    // For arrays, strings, numbers, etc.
-    return content;
+    return (
+      <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <h4 className="text-md font-semibold text-gray-700 mb-2 flex items-center">
+          {icon && <span className="mr-2 text-purple-600">{icon}</span>}
+          {label}
+        </h4>
+        {Array.isArray(content) ? (
+          <ul className="list-disc list-inside space-y-1 text-gray-600">
+            {content.map((item, index) => (
+              <li key={index}>
+                {typeof item === "object"
+                  ? JSON.stringify(item, null, 2)
+                  : item}
+              </li>
+            ))}
+          </ul>
+        ) : typeof content === "object" ? (
+          <pre className="whitespace-pre-wrap text-sm text-gray-600 bg-white p-3 rounded border">
+            {JSON.stringify(content, null, 2)}
+          </pre>
+        ) : (
+          <p className="whitespace-pre-line text-gray-600">{content}</p>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -133,10 +125,39 @@ export default function TreatmentPlanResultsPage() {
         <div className="print:hidden">
           <button
             onClick={printTreatmentPlan}
+            disabled={isExporting}
             className="px-4 py-2 flex items-center border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
           >
-            <FiPrinter className="mr-2" />
-            Print Plan
+            {isExporting ? (
+              <>
+                <svg
+                  className="animate-spin h-4 w-4 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <FiPrinter className="mr-2" />
+                Download PDF
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -147,133 +168,155 @@ export default function TreatmentPlanResultsPage() {
             MENTAL HEALTH TREATMENT PLAN
           </h2>
           <p className="text-center text-purple-100 print:text-gray-600">
-            EALTH - SMART Health Monitoring System
+            EALTH - SMART Health Monitoring System - Generated:{" "}
+            {treatmentPlan.generation_date || new Date().toLocaleDateString()}
           </p>
         </div>
 
-        <div className="p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="p-6 md:p-8"
+        >
           {treatmentPlan.patient_information && (
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-                Personal Information
+            <div className="mb-8 pb-4 border-b border-gray-200">
+              <h3 className="text-xl font-bold mb-3 text-gray-800">
+                Patient Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Name</p>
-                  <p className="font-medium">
-                    {treatmentPlan.patient_information.name}
+                  <p className="text-gray-500">Name</p>
+                  <p className="font-medium text-gray-700">
+                    {treatmentPlan.patient_information.name || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Age</p>
-                  <p className="font-medium">
-                    {treatmentPlan.patient_information.age}
+                  <p className="text-gray-500">Age</p>
+                  <p className="font-medium text-gray-700">
+                    {treatmentPlan.patient_information.age || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Gender</p>
-                  <p className="font-medium">
-                    {treatmentPlan.patient_information.gender}
+                  <p className="text-gray-500">Gender</p>
+                  <p className="font-medium text-gray-700">
+                    {treatmentPlan.patient_information.gender || "N/A"}
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-          {treatmentPlan.condition && (
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-                Mental Health Assessment
-              </h3>
-              <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg">
-                <p>
-                  <span className="font-medium text-purple-800">
-                    Condition:
-                  </span>{" "}
-                  {renderContent(treatmentPlan.condition)}
-                </p>
-              </div>
-            </div>
+          {renderField(
+            "Clinical Formulation",
+            treatmentPlan.clinical_formulation,
+            <FiMessageSquare />
           )}
 
-          {treatmentPlan.medications &&
-            treatmentPlan.medications.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-                  Medication Recommendations
-                </h3>
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
-                  <ul className="space-y-3">
-                    {treatmentPlan.medications.map((med, i) => (
-                      <li key={i} className="flex items-start">
-                        <span className="inline-block h-5 w-5 bg-blue-200 text-blue-800 rounded-full text-xs flex items-center justify-center font-bold mr-2 mt-0.5">
-                          {i + 1}
-                        </span>
-                        <span>{renderContent(med)}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {treatmentPlan.dosage_instructions && (
-                    <div className="mt-6 pt-4 border-t border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-2">
-                        Dosage Instructions:
-                      </h4>
-                      <p className="whitespace-pre-line">
-                        {renderContent(treatmentPlan.dosage_instructions)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+          {treatmentPlan.diagnosis && (
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="text-md font-semibold text-gray-700 mb-2 flex items-center">
+                <FiCheckCircle className="mr-2 text-purple-600" /> Diagnosis
+              </h4>
+              {renderField(
+                "Primary Diagnosis",
+                treatmentPlan.diagnosis.primary
+              )}
+              {renderField(
+                "Differential Diagnosis",
+                treatmentPlan.diagnosis.differential
+              )}
+              {renderField(
+                "Contributing Factors",
+                treatmentPlan.diagnosis.contributing_factors
+              )}
+            </div>
+          )}
 
           {treatmentPlan.treatment_plan && (
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-                Treatment Approach
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-3 text-gray-800 pt-4 border-t border-gray-200">
+                Treatment Plan
               </h3>
-              <div className="bg-green-50 border border-green-100 p-4 rounded-lg">
-                <div className="whitespace-pre-line">
-                  {renderContent(treatmentPlan.treatment_plan)}
-                </div>
-              </div>
+              {renderField(
+                "Immediate Recommendations",
+                treatmentPlan.treatment_plan.immediate_recommendations,
+                <FiAlertCircle />
+              )}
+              {renderField(
+                "Psychotherapy",
+                treatmentPlan.treatment_plan.psychotherapy,
+                <FiMessageSquare />
+              )}
+              {renderField(
+                "Medication Considerations (Classes & Rationale)",
+                treatmentPlan.treatment_plan.medication_considerations,
+                <FiActivity />
+              )}
+              {renderField(
+                "Lifestyle Modifications",
+                treatmentPlan.treatment_plan.lifestyle_modifications,
+                <FiList />
+              )}
+              {renderField(
+                "Self-Care Strategies",
+                treatmentPlan.treatment_plan.self_care_strategies,
+                <FiShield />
+              )}
             </div>
           )}
 
-          {treatmentPlan.follow_up_instructions && (
-            <div className="mb-8">
-              <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-                Follow-up Instructions
+          {renderField(
+            "Medications (Classes)",
+            treatmentPlan.medications,
+            <FiList />
+          )}
+          {renderField(
+            "Dosage Instructions & Monitoring",
+            treatmentPlan.dosage_instructions,
+            <FiMessageSquare />
+          )}
+
+          {treatmentPlan.monitoring_plan && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold mb-3 text-gray-800 pt-4 border-t border-gray-200">
+                Monitoring Plan
               </h3>
-              <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-lg">
-                <div className="whitespace-pre-line">
-                  {renderContent(treatmentPlan.follow_up_instructions)}
-                </div>
-              </div>
+              {renderField(
+                "Follow-up Schedule",
+                treatmentPlan.monitoring_plan.follow_up,
+                <FiArrowLeft />
+              )}
+              {renderField(
+                "Assessment Tools",
+                treatmentPlan.monitoring_plan.assessment_tools,
+                <FiFileText />
+              )}
+              {renderField(
+                "Warning Signs",
+                treatmentPlan.monitoring_plan.warning_signs,
+                <FiAlertCircle />
+              )}
+              {renderField(
+                "Treatment Milestones",
+                treatmentPlan.monitoring_plan.treatment_milestones,
+                <FiCheckCircle />
+              )}
             </div>
           )}
 
-          {treatmentPlan.additional_recommendations &&
-            treatmentPlan.additional_recommendations.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">
-                  Additional Recommendations
-                </h3>
-                <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg">
-                  <ul className="space-y-3">
-                    {treatmentPlan.additional_recommendations.map((rec, i) => (
-                      <li key={i} className="flex items-start">
-                        <span className="text-indigo-600 mr-2">•</span>
-                        <span>{renderContent(rec)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
+          {renderField(
+            "Follow-up Instructions (Overall)",
+            treatmentPlan.follow_up_instructions,
+            <FiArrowLeft />
+          )}
+          {renderField(
+            "Additional Recommendations",
+            treatmentPlan.additional_recommendations,
+            <FiList />
+          )}
 
-          <div className="mt-12 pt-8 border-t border-gray-200">
+          <div className="mt-12 pt-8 border-t border-gray-200 text-xs text-gray-500">
             <div className="flex justify-between items-start">
               <div>
                 <div className="h-0.5 w-40 bg-black mb-1"></div>
@@ -287,10 +330,10 @@ export default function TreatmentPlanResultsPage() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      <div className="flex justify-between print:hidden">
+      <div className="flex justify-between print:hidden mt-8">
         <Link
           href="/psychiatrist/treatment"
           className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center"

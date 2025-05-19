@@ -3,3 +3,5 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
+models/resnet101_emotion_latest.pt
+models/wav2vec_emotion_model.pt

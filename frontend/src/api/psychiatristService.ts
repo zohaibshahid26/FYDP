@@ -1,18 +1,58 @@
 import {
   EmotionData,
   AnalysisResponse,
-  PrescriptionData,
-  PrescriptionResponse,
+  GeneratePrescriptionInput,
+  TreatmentResponse,
+  ChatRequestPayload,
+  ChatResponse,
+  ChatWithFileRequestPayload, // Added
+  ChatWithFileResponse, // Added
 } from "@/types/psychiatristTypes";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+// Base URL for API calls
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// Analyze emotions function
-export async function analyzeEmotions(
-  data: EmotionData
-): Promise<AnalysisResponse> {
+/**
+ * Upload and analyze a video for emotional assessment
+ */
+export const analyzeVideo = async (
+  videoFile: File,
+  patientInfo: any
+): Promise<AnalysisResponse> => {
   try {
-    const response = await fetch(`${API_URL}/analyze`, {
+    const formData = new FormData();
+    formData.append("video", videoFile);
+    formData.append("patient_info", JSON.stringify(patientInfo));
+
+    const response = await fetch(`${API_BASE_URL}/analyze_video`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: "Network response was not ok and error details are unavailable",
+      }));
+      throw new Error(
+        errorData.error || `Server responded with status ${response.status}`
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error analyzing video:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate a treatment plan based on analysis results
+ */
+export const generateTreatmentPlan = async (
+  data: any
+): Promise<TreatmentResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/generate_prescription`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -21,23 +61,30 @@ export async function analyzeEmotions(
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to analyze emotions");
+      const errorData = await response.json().catch(() => ({
+        error: "Network response was not ok and error details are unavailable",
+      }));
+      throw new Error(
+        errorData.error ||
+          `Failed to generate prescription: ${response.statusText}`
+      );
     }
 
     return await response.json();
-  } catch (error: any) {
-    console.error("Error in analyzeEmotions:", error);
-    throw new Error(error.message || "Failed to analyze emotions");
+  } catch (error) {
+    console.error("Error generating treatment plan:", error);
+    throw error;
   }
-}
+};
 
-// Generate prescription function
+/**
+ * Generate a prescription based on input data
+ */
 export async function generatePrescription(
-  data: PrescriptionData
-): Promise<PrescriptionResponse> {
+  data: GeneratePrescriptionInput
+): Promise<TreatmentResponse> {
   try {
-    const response = await fetch(`${API_URL}/generate_prescription`, {
+    const response = await fetch(`${API_BASE_URL}/generate_prescription`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -46,42 +93,82 @@ export async function generatePrescription(
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to generate prescription");
+      const errorData = await response.json().catch(() => ({
+        error: "Network response was not ok and error details are unavailable",
+      }));
+      throw new Error(
+        errorData.error ||
+          `Failed to generate prescription: ${response.statusText}`
+      );
     }
 
     return await response.json();
-  } catch (error: any) {
-    console.error("Error in generatePrescription:", error);
-    throw new Error(error.message || "Failed to generate prescription");
+  } catch (error) {
+    console.error("Error generating prescription:", error);
+    throw error;
   }
 }
 
-// Conversation retrieval function
-export async function retrieveContent(
-  query: string,
-  emotion: string | null = null
-) {
+/**
+ * Download a PDF report for the analysis or treatment plan
+ */
+export const downloadPdfReport = async (
+  reportType: string,
+  reportData: any
+): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/retrieve_content`, {
+    const response = await fetch(`${API_BASE_URL}/generate_pdf_report`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, emotion }),
+      body: JSON.stringify({
+        report_type: reportType,
+        report_data: reportData,
+      }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to retrieve content");
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.error || `Failed to download PDF: ${response.statusText}`
+      );
     }
 
-    return await response.json();
-  } catch (error: any) {
-    console.error("Error in retrieveContent:", error);
-    throw new Error(error.message || "Failed to retrieve content");
+    // Get the blob from the response
+    const blob = await response.blob();
+
+    // Create a temporary URL for the blob
+    const url = window.URL.createObjectURL(blob);
+
+    // Create a temporary link element
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+
+    // Get the filename from the Content-Disposition header if available
+    const contentDisposition = response.headers.get("Content-Disposition");
+    let filename = `${reportType}_report.pdf`;
+
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/i);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error("Error downloading PDF report:", error);
+    throw error;
   }
-}
+};
 
 // Chat message function
 export async function sendChatMessage(
@@ -91,7 +178,7 @@ export async function sendChatMessage(
 ) {
   try {
     // Verify the API URL is properly set
-    const apiUrl = `${API_URL}/chat`;
+    const apiUrl = `${API_BASE_URL}/chat`;
     console.log(`Sending request to: ${apiUrl}`);
 
     // Format chat history properly

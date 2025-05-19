@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { generatePrescription } from "@/api/psychiatristService";
-import { AnalysisResponse, PrescriptionData } from "@/types/psychiatristTypes";
+import {
+  TreatmentResponse,
+  AnalysisResponse,
+  GeneratePrescriptionInput,
+} from "@/types/psychiatristTypes";
 import {
   FiFileText,
   FiAlertCircle,
@@ -14,6 +17,7 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { generatePrescription } from "@/api/psychiatristService";
 
 export default function TreatmentPlanPage() {
   const router = useRouter();
@@ -22,7 +26,7 @@ export default function TreatmentPlanPage() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | null>(
     null
   );
-  const [formData, setFormData] = useState<PrescriptionData>({
+  const [formData, setFormData] = useState<GeneratePrescriptionInput>({
     patient_name: "",
     patient_age: "",
     patient_gender: "",
@@ -30,7 +34,6 @@ export default function TreatmentPlanPage() {
   });
 
   useEffect(() => {
-    // Retrieve analysis result from localStorage
     const storedResult = localStorage.getItem("analysisResult");
 
     if (storedResult) {
@@ -38,29 +41,12 @@ export default function TreatmentPlanPage() {
         const result = JSON.parse(storedResult) as AnalysisResponse;
         setAnalysisResult(result);
 
-        // Pre-fill the form with all data from analysis including patient information
-        if (result.patient_information) {
-          setFormData({
-            patient_name: result.patient_information.name || "",
-            patient_age: result.patient_information.age || "",
-            patient_gender: result.patient_information.gender || "",
-            mental_assessment: {
-              condition: result.condition,
-              differential_diagnosis: result.differential_diagnosis,
-              severity: result.severity,
-            },
-          });
-        } else {
-          // If patient info is missing, still use the condition data
-          setFormData((prev) => ({
-            ...prev,
-            mental_assessment: {
-              condition: result.condition,
-              differential_diagnosis: result.differential_diagnosis,
-              severity: result.severity,
-            },
-          }));
-        }
+        setFormData({
+          patient_name: result.patient_information?.name || "",
+          patient_age: result.patient_information?.age || "",
+          patient_gender: result.patient_information?.gender || "",
+          mental_assessment: result,
+        });
       } catch (e) {
         console.error("Error parsing analysis result", e);
       }
@@ -75,10 +61,8 @@ export default function TreatmentPlanPage() {
     try {
       const response = await generatePrescription(formData);
 
-      // Store the prescription result
       localStorage.setItem("prescriptionResult", JSON.stringify(response));
 
-      // Redirect to results page
       router.push("/psychiatrist/treatment/results");
     } catch (err) {
       setError("Failed to generate treatment plan. Please try again.");
@@ -88,7 +72,6 @@ export default function TreatmentPlanPage() {
     }
   };
 
-  // If no analysis result is found, show a prominent message to complete analysis first
   if (!analysisResult) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -256,7 +239,7 @@ export default function TreatmentPlanPage() {
               <p className="text-gray-700 text-sm mt-1">
                 Our AI system will generate a comprehensive treatment plan based
                 on the analysis of {formData.patient_name || "the patient"}'s
-                condition
+                condition.
               </p>
             </div>
           </div>

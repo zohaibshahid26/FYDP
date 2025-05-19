@@ -35,14 +35,152 @@ export default function Home() {
               </div>
             </div>
             <div className="md:w-1/2 mb-10 md:mb-0">
-              <div className="relative h-64 md:h-96 w-full">
-                {/* Replace with an actual image related to healthcare */}
-                <div className="absolute inset-0 bg-blue-600 rounded-lg opacity-10"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-blue-800 font-bold text-xl">
-                    Medical Dashboard Image
-                  </span>
-                </div>
+              <div className="relative h-64 md:h-96 w-full flex items-center justify-center">
+                <svg
+                  viewBox="0 0 200 200"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full max-w-md max-h-md"
+                >
+                  <defs>
+                    <linearGradient
+                      id="grad1"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="100%"
+                    >
+                      <stop
+                        offset="0%"
+                        style={{
+                          stopColor: "rgb(59, 130, 246)",
+                          stopOpacity: 1,
+                        }}
+                      />
+                      <stop
+                        offset="100%"
+                        style={{
+                          stopColor: "rgb(37, 99, 235)",
+                          stopOpacity: 1,
+                        }}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id="grad2"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="100%"
+                    >
+                      <stop
+                        offset="0%"
+                        style={{
+                          stopColor: "rgb(16, 185, 129)",
+                          stopOpacity: 1,
+                        }}
+                      />
+                      <stop
+                        offset="100%"
+                        style={{
+                          stopColor: "rgb(5, 150, 105)",
+                          stopOpacity: 1,
+                        }}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="90"
+                    fill="url(#grad1)"
+                    opacity="0.1"
+                  />
+                  <path
+                    d="M100 40 C 70 40 50 60 50 90 C 50 130 100 170 100 170 C 100 170 150 130 150 90 C 150 60 130 40 100 40 Z"
+                    fill="url(#grad1)"
+                    stroke="white"
+                    strokeWidth="3"
+                    transform="scale(0.8) translate(25, 20)"
+                  />
+                  <rect
+                    x="92"
+                    y="75"
+                    width="16"
+                    height="50"
+                    fill="white"
+                    rx="3"
+                    transform="scale(0.8) translate(25, 20)"
+                  />
+                  <rect
+                    x="75"
+                    y="92"
+                    width="50"
+                    height="16"
+                    fill="white"
+                    rx="3"
+                    transform="scale(0.8) translate(25, 20)"
+                  />
+                  <circle
+                    cx="60"
+                    cy="70"
+                    r="8"
+                    fill="url(#grad2)"
+                    opacity="0.7"
+                  />
+                  <circle
+                    cx="140"
+                    cy="70"
+                    r="6"
+                    fill="url(#grad2)"
+                    opacity="0.7"
+                  />
+                  <circle
+                    cx="70"
+                    cy="140"
+                    r="5"
+                    fill="url(#grad2)"
+                    opacity="0.6"
+                  />
+                  <circle
+                    cx="130"
+                    cy="130"
+                    r="7"
+                    fill="url(#grad2)"
+                    opacity="0.8"
+                  />
+                  <line
+                    x1="65"
+                    y1="75"
+                    x2="85"
+                    y2="95"
+                    stroke="url(#grad2)"
+                    strokeWidth="2"
+                    opacity="0.5"
+                  />
+                  <line
+                    x1="135"
+                    y1="75"
+                    x2="115"
+                    y2="95"
+                    stroke="url(#grad2)"
+                    strokeWidth="2"
+                    opacity="0.5"
+                  />
+                  <path
+                    d="M 40 100 L 160 100 M 100 40 L 100 160"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="1"
+                    strokeDasharray="2 2"
+                  />
+                  <text
+                    x="100"
+                    y="185"
+                    textAnchor="middle"
+                    fontSize="10"
+                    fill="rgb(55, 65, 81)"
+                  >
+                    EALTH AI
+                  </text>
+                </svg>
               </div>
             </div>
           </div>

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnalysisResponse } from "@/types/psychiatristTypes";
+
+import { downloadPdfReport } from "@/api/psychiatristService";
 import {
   FiFileText,
   FiChevronRight,
@@ -17,6 +19,8 @@ import {
   FiSave,
   FiLayers,
   FiCopy,
+  FiEye,
+  FiEyeOff,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 
@@ -31,6 +35,8 @@ export default function AnalysisResultsPage() {
   );
   const [activeTab, setActiveTab] = useState("report"); // "report" or "edit"
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showRawAnalysis, setShowRawAnalysis] = useState(false);
 
   useEffect(() => {
     // Retrieve analysis result from localStorage
@@ -38,9 +44,9 @@ export default function AnalysisResultsPage() {
 
     if (storedResult) {
       try {
-        const parsed = JSON.parse(storedResult);
+        const parsed = JSON.parse(storedResult) as AnalysisResponse;
         setAnalysisResult(parsed);
-        setEditedContent(parsed);
+        setEditedContent(JSON.parse(JSON.stringify(parsed)));
       } catch (e) {
         console.error("Error parsing analysis result", e);
       }
@@ -60,7 +66,8 @@ export default function AnalysisResultsPage() {
   }
 
   // Helper functions for UI
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string | undefined) => {
+    if (!severity) return "bg-gray-100 text-gray-700 border-gray-300";
     const lowerSeverity = severity.toLowerCase();
     if (lowerSeverity.includes("mild"))
       return "bg-yellow-100 text-yellow-800 border-yellow-300";
@@ -71,7 +78,8 @@ export default function AnalysisResultsPage() {
     return "bg-blue-100 text-blue-700 border-blue-300";
   };
 
-  const getRiskColor = (risk: string) => {
+  const getRiskColor = (risk: string | undefined) => {
+    if (!risk) return "bg-gray-100 text-gray-800 border-gray-300";
     const lowerRisk = risk.toLowerCase();
     if (lowerRisk.includes("low"))
       return "bg-green-100 text-green-800 border-green-300";
@@ -83,7 +91,7 @@ export default function AnalysisResultsPage() {
   };
 
   // Handle text editing
-  const handleTextChange = (field: string, value: string) => {
+  const handleTextChange = (field: keyof AnalysisResponse, value: string) => {
     setEditedContent((prev) => {
       if (prev === null) return null;
       return {
@@ -95,10 +103,10 @@ export default function AnalysisResultsPage() {
 
   // Handle therapy options changes
   const handleTherapyChange = (index: number, value: string) => {
-    if (!editedContent) return;
+    if (!editedContent || !editedContent.therapy_options) return;
 
     setEditedContent((prev) => {
-      if (!prev) return null;
+      if (!prev || !prev.therapy_options) return null;
 
       const newTherapies = [...prev.therapy_options];
       newTherapies[index] = value;
@@ -112,10 +120,10 @@ export default function AnalysisResultsPage() {
 
   // Handle recommendation changes
   const handleRecommendationChange = (index: number, value: string) => {
-    if (!editedContent) return;
+    if (!editedContent || !editedContent.recommendations) return;
 
     setEditedContent((prev) => {
-      if (!prev) return null;
+      if (!prev || !prev.recommendations) return null;
 
       const newRecommendations = [...prev.recommendations];
       newRecommendations[index] = value;
@@ -153,17 +161,20 @@ export default function AnalysisResultsPage() {
     setActiveTab("report");
   };
 
-  // Export to PDF
-  const exportToPdf = () => {
-    window.print();
-  };
+  // Updated export to PDF function
+  const exportToPdf = async () => {
+    if (!analysisResult) return;
 
-  // Export to Word/Document format
-  const exportToDoc = () => {
-    // This would normally connect to a backend service to generate a doc
-    alert("Report exported to document format!");
+    setIsExporting(true);
+    try {
+      await downloadPdfReport("analysis", analysisResult);
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      alert("Failed to export to PDF. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
-
   // Copy to clipboard
   const copyToClipboard = () => {
     if (editorRef.current) {
@@ -181,7 +192,11 @@ export default function AnalysisResultsPage() {
 
   // Ensure editedContent is not null before rendering edit form
   if (activeTab === "edit" && !editedContent) {
-    setActiveTab("report");
+    if (analysisResult) {
+      setEditedContent(JSON.parse(JSON.stringify(analysisResult)));
+    } else {
+      setActiveTab("report");
+    }
   }
 
   return (
@@ -197,17 +212,39 @@ export default function AnalysisResultsPage() {
         <div className="flex items-center space-x-2">
           <button
             onClick={exportToPdf}
-            className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-            title="Print Report"
+            disabled={isExporting}
+            className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 disabled:opacity-50"
+            title="Export to PDF"
           >
-            <FiPrinter className="mr-2" /> Print
-          </button>
-          <button
-            onClick={exportToDoc}
-            className="flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700"
-            title="Export to Document"
-          >
-            <FiDownload className="mr-2" /> Export
+            {isExporting ? (
+              <>
+                <svg
+                  className="animate-spin h-4 w-4 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <FiPrinter className="mr-2" /> PDF Export
+              </>
+            )}
           </button>
           <button
             onClick={copyToClipboard}
@@ -236,7 +273,10 @@ export default function AnalysisResultsPage() {
                     Mental Health Assessment
                   </h1>
                   <p className="text-blue-100">
-                    Generated on {analysisResult.timestamp}
+                    Generated on{" "}
+                    {analysisResult.timestamp
+                      ? new Date(analysisResult.timestamp).toLocaleString()
+                      : "N/A"}
                   </p>
                 </div>
               </div>
@@ -305,20 +345,19 @@ export default function AnalysisResultsPage() {
                   <div>
                     <p className="text-sm text-gray-500">Name</p>
                     <p className="font-medium">
-                      {analysisResult.patient_information?.name ||
-                        "Anonymous Patient"}
+                      {analysisResult.patient_information?.name || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Age</p>
                     <p className="font-medium">
-                      {analysisResult.patient_information?.age || "Unknown"}
+                      {analysisResult.patient_information?.age || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Gender</p>
                     <p className="font-medium">
-                      {analysisResult.patient_information?.gender || "Unknown"}
+                      {analysisResult.patient_information?.gender || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -330,7 +369,7 @@ export default function AnalysisResultsPage() {
                     Primary Condition
                   </div>
                   <div className="text-lg font-semibold">
-                    {analysisResult.condition}
+                    {analysisResult.condition || "N/A"}
                   </div>
                 </div>
 
@@ -342,7 +381,7 @@ export default function AnalysisResultsPage() {
                   <div className="text-sm font-medium mb-1">Severity</div>
                   <div className="text-lg font-semibold flex items-center">
                     <FiActivity className="mr-2" />
-                    {analysisResult.severity}
+                    {analysisResult.severity || "N/A"}
                   </div>
                 </div>
 
@@ -356,7 +395,7 @@ export default function AnalysisResultsPage() {
                   </div>
                   <div className="text-lg font-semibold flex items-center">
                     <FiAlertTriangle className="mr-2" />
-                    {analysisResult.risk_assessment}
+                    {analysisResult.risk_assessment || "N/A"}
                   </div>
                 </div>
               </div>
@@ -369,7 +408,7 @@ export default function AnalysisResultsPage() {
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <p className="whitespace-pre-line text-gray-700">
-                      {analysisResult.mental_health_assessment}
+                      {analysisResult.mental_health_assessment || "N/A"}
                     </p>
                   </div>
 
@@ -378,7 +417,9 @@ export default function AnalysisResultsPage() {
                     Prognosis
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-gray-700">{analysisResult.prognosis}</p>
+                    <p className="text-gray-700">
+                      {analysisResult.prognosis || "N/A"}
+                    </p>
                   </div>
                 </div>
 
@@ -389,7 +430,7 @@ export default function AnalysisResultsPage() {
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <p className="whitespace-pre-line text-gray-700">
-                      {analysisResult.differential_diagnosis}
+                      {analysisResult.differential_diagnosis || "N/A"}
                     </p>
                   </div>
 
@@ -398,7 +439,9 @@ export default function AnalysisResultsPage() {
                     Follow-up Recommendation
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <p className="text-gray-700">{analysisResult.follow_up}</p>
+                    <p className="text-gray-700">
+                      {analysisResult.follow_up || "N/A"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -409,12 +452,13 @@ export default function AnalysisResultsPage() {
                   Treatment Recommendations
                 </h3>
 
-                {analysisResult.recommendations.length > 0 ? (
+                {analysisResult.recommendations &&
+                analysisResult.recommendations.length > 0 ? (
                   <ul className="space-y-2 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     {analysisResult.recommendations.map((rec, i) => (
                       <li key={i} className="flex items-start">
                         <FiChevronRight className="mt-1 mr-2 text-blue-600 flex-shrink-0" />
-                        <span className="text-gray-700">{rec}</span>
+                        {rec || "N/A"}
                       </li>
                     ))}
                   </ul>
@@ -427,12 +471,13 @@ export default function AnalysisResultsPage() {
                 <h4 className="font-semibold text-gray-700 mb-2">
                   Therapy Options
                 </h4>
-                {analysisResult.therapy_options.length > 0 ? (
+                {analysisResult.therapy_options &&
+                analysisResult.therapy_options.length > 0 ? (
                   <ul className="space-y-2 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     {analysisResult.therapy_options.map((therapy, i) => (
                       <li key={i} className="flex items-start">
                         <FiChevronRight className="mt-1 mr-2 text-blue-600 flex-shrink-0" />
-                        <span className="text-gray-700">{therapy}</span>
+                        {therapy || "N/A"}
                       </li>
                     ))}
                   </ul>
@@ -453,7 +498,7 @@ export default function AnalysisResultsPage() {
                           (med, i) => (
                             <li key={i} className="flex items-start">
                               <FiChevronRight className="mt-1 mr-2 text-blue-600 flex-shrink-0" />
-                              <span className="text-gray-700">{med}</span>
+                              {med || "N/A"}
                             </li>
                           )
                         )}
@@ -461,6 +506,45 @@ export default function AnalysisResultsPage() {
                     </>
                   )}
               </div>
+
+              {analysisResult.emotion_analysis && (
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <FiActivity className="mr-2 text-blue-600" />
+                      Raw Emotional Analysis Data
+                    </h3>
+                    <button
+                      onClick={() => setShowRawAnalysis(!showRawAnalysis)}
+                      className="text-blue-600 text-sm font-medium hover:underline flex items-center"
+                    >
+                      {showRawAnalysis ? (
+                        <>
+                          <FiEyeOff className="mr-1" /> Hide Data
+                        </>
+                      ) : (
+                        <>
+                          <FiEye className="mr-1" /> Show Data
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {showRawAnalysis && (
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-auto">
+                      <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {typeof analysisResult.emotion_analysis === "string"
+                          ? analysisResult.emotion_analysis
+                          : JSON.stringify(
+                              analysisResult.emotion_analysis,
+                              null,
+                              2
+                            )}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-8 pt-6 border-t border-gray-200 text-center">
                 <p className="text-sm text-gray-500">

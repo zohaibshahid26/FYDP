@@ -41,20 +41,21 @@ export default function RootLayout({
                       Home
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/fall-detection"
-                      className="text-gray-600 hover:text-blue-600 transition-colors"
-                    >
-                      Fall Detection
-                    </Link>
-                  </li>
+
                   <li>
                     <Link
                       href="/psychiatrist"
                       className="text-gray-600 hover:text-blue-600 transition-colors"
                     >
                       AI Psychiatrist
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/fall-detection"
+                      className="text-gray-600 hover:text-blue-600 transition-colors"
+                    >
+                      Fall Detection
                     </Link>
                   </li>
                   <li>
@@ -86,18 +87,18 @@ export default function RootLayout({
                 <ul className="space-y-2">
                   <li>
                     <Link
-                      href="/fall-detection"
-                      className="text-blue-200 hover:text-white transition-colors"
-                    >
-                      Person Fall Detection
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
                       href="/psychiatrist"
                       className="text-blue-200 hover:text-white transition-colors"
                     >
                       AI Powered Psychiatrist
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/fall-detection"
+                      className="text-blue-200 hover:text-white transition-colors"
+                    >
+                      Fall Detection
                     </Link>
                   </li>
                 </ul>

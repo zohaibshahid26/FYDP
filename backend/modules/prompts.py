@@ -42,123 +42,140 @@ def format_rag_context(relevant_information: List[Dict[str, Any]]) -> str:
 
 def create_analysis_prompt(
     patient_name: str,
-    facial_emotion: str, facial_confidence: float,
-    speech_emotion: str, speech_confidence: float,
-    combined_emotion: str, combined_confidence: float,
-    patient_age: str, patient_gender: str, symptom_duration: str,
-    additional_notes: str, relevant_information: List[Dict[str, Any]]
+    patient_age: str,
+    patient_gender: str,
+    emotion_analysis: str,
+    transcribed_text: Optional[str], # Added parameter for transcribed speech
+    relevant_information: list
 ) -> str:
     """
     Create an enhanced psychiatric assessment prompt with RAG integration
-    
     Args:
         patient_name (str): Patient's name
-        facial_emotion (str): Facial expression emotion
-        facial_confidence (float): Confidence in facial emotion
-        speech_emotion (str): Speech tone emotion
-        speech_confidence (float): Confidence in speech emotion
-        combined_emotion (str): Combined emotional assessment
-        combined_confidence (float): Confidence in combined emotion
         patient_age (str): Patient's age
         patient_gender (str): Patient's gender
-        symptom_duration (str): Duration of symptoms
-        additional_notes (str): Additional clinical notes
+        emotion_analysis (str): Raw output from process_video (includes all emotion scores and trends)
+        transcribed_text (Optional[str]): Transcribed text from patient's speech
         relevant_information (List[Dict]): RAG retrieved information
-        
     Returns:
         str: Complete LLM prompt
     """
-    # Format RAG context
     rag_context = format_rag_context(relevant_information)
-    
-    # Current date 
     today_date = date.today().strftime("%B %d, %Y")
+
+    # Section for transcribed text
+    transcribed_text_section = ""
+    if transcribed_text and transcribed_text not in ["Audio not clear or no speech detected.", "Speech recognition service unavailable.", "Audio extraction failed."]:
+        transcribed_text_section = f"""
+    ## PATIENT'S VERBAL CONTENT (Transcribed Speech)
+
+    The following is the transcribed text from the patient's speech during the video session:
+    ```
+    {transcribed_text}
+    ```
+    **Analyze this verbal content for:**
+    - Key themes, topics, or concerns expressed by the patient.
+    - Specific keywords or phrases indicative of their mental state (e.g., hopelessness, anxiety, delusions, positive coping statements).
+    - Any mention of suicidal ideation, self-harm, or harm to others.
+    - Coherence and organization of thought.
+    - Congruence or discrepancy between verbal content and the multimodal emotion analysis.
+    """
+    else:
+        transcribed_text_section = """
+    ## PATIENT'S VERBAL CONTENT (Transcribed Speech)
     
+    No clear speech was transcribed from the audio, or speech recognition was unavailable. Base your assessment primarily on non-verbal cues and provided notes.
+    """
+
     prompt = f"""
-    # Advanced Psychiatric Assessment Protocol (APAP-23)
-    
-    You are Dr. Morgan Chen, MD, PhD, FRCP(C), a board-certified psychiatrist with 15 years of clinical experience specializing in mood disorders, anxiety spectrum disorders, and complex comorbidities. You've authored 47 peer-reviewed publications and developed the Multimodal Psychiatric Assessment Framework now implemented in several leading hospitals. You're currently conducting a thorough psychiatric assessment based on multimodal emotional analysis data and patient history. Today is {today_date}.
+    # Advanced Psychiatric Assessment Protocol (APAP-24)
+
+    You are Dr. Morgan Chen, MD, PhD, FRCP(C), a board-certified psychiatrist with 15 years of clinical experience specializing in mood disorders, anxiety spectrum disorders, and complex comorbidities. You have expertise in interpreting AI-driven multimodal emotion analysis and integrating it with verbal content analysis for clinical decision-making. Today is {today_date}. Your approach is holistic, considering strengths and resilience alongside potential concerns.
 
     ## PATIENT IDENTIFICATION DATA
-    
+
     - **Name**: {patient_name}
     - **Age**: {patient_age}
     - **Gender**: {patient_gender}
     - **Assessment Date**: {today_date}
     - **Chief Complaint**: Requires mental health evaluation
-    - **Symptom Duration**: {symptom_duration}
 
-    ## MULTIMODAL EMOTIONAL ANALYSIS RESULTS
-    
-    ### Facial Expression Analysis
-    - **Primary Emotion**: {facial_emotion} 
-    - **Confidence Score**: {facial_confidence:.2f}/1.00
-    - **Key Observations**: {facial_emotion.capitalize()} affect demonstrated through facial microsignals
-    
-    ### Speech Prosody Analysis
-    - **Primary Emotion**: {speech_emotion}
-    - **Confidence Score**: {speech_confidence:.2f}/1.00
-    - **Key Observations**: Vocal tone and speech pattern consistent with {speech_emotion} emotional state
-    
-    ### Integrated Emotional Assessment
-    - **Dominant Emotional State**: {combined_emotion}
-    - **Confidence Score**: {combined_confidence:.2f}/1.00
-    - **Congruence Analysis**: {
-        "Highly congruent emotional presentation" if facial_emotion.lower() == speech_emotion.lower() 
-        else f"Mixed emotional signals between facial ({facial_emotion}) and speech ({speech_emotion}) indicators"
-    }
-    
-    ### Clinician Notes
-    {additional_notes}
-    
+    ## MULTIMODAL EMOTIONAL ANALYSIS RESULTS (Non-Verbal Cues)
+
+    The following is the complete output from the AI-based emotion analysis system (facial expressions, vocal tone prosody), which includes average emotion scores, temporal trends, and mental health insights. Use this as your primary source for non-verbal emotional state assessment:
+    ```
+    {emotion_analysis}
+    ```
+
+    '''
+    {transcribed_text_section}
+    '''
+
     ## EVIDENCE-BASED CLINICAL REFERENCES
-    
+
     {rag_context}
-    
+
+    ## CONTEXTUAL ANALYSIS GUIDELINES
+
+    1. **Holistic Emotional Data Interpretation (Multimodal)**:
+       - Carefully interpret the emotion scores and trends (from `emotion_analysis`) in conjunction with the `transcribed_text` (if available).
+       - **Cross-Validate**: Look for consistency or discrepancies between non-verbal emotional cues and verbal content. For example, if the patient states they are "fine" but non-verbal cues show high sadness, note this incongruence.
+       - **Verbal Content Insights**: If transcribed text is available, explicitly incorporate its analysis (themes, keywords, risk phrases) into your assessment.
+       - **Negative/Distress Indicators**: If the analysis shows high sadness, anxiety, fear, or anger, or if verbal content expresses distress, highlight possible depressive, anxious, mood instability, or distress features.
+       - **Positive/Resilience Indicators**: If the analysis shows high positive affect (e.g., happiness, contentment) AND/OR verbal content expresses positive coping, resilience, or well-being, discuss this as potential resilience, effective coping, recovery, or general well-being.
+
+    2. **Integrate with Clinical Presentation & Strengths**:
+       - Relate the combined multimodal emotion analysis (non-verbal + verbal) to the patient's reported symptoms, history, and also any noted strengths or positive coping mechanisms.
+       - Consider how the overall emotional and verbal profile (both challenges and strengths) may influence diagnosis, risk, protective factors, and treatment/well-being planning.
+
+    3. **Balanced Risk and Safety Assessment (Enhanced with Verbal Content)**:
+       - If the non-verbal analysis or notes suggest risk, OR if the `transcribed_text` contains phrases related to self-harm, suicide, hopelessness, or harm to others, explicitly address suicide/self-harm risk and recommend safety planning as needed.
+       - Equally, if the analysis suggests stability, positive affect, or low distress, AND verbal content aligns with this, identify this as low-risk. Highlight protective factors and existing strengths.
+
     ## COMPREHENSIVE PSYCHIATRIC ASSESSMENT METHODOLOGY
-    
+
     Apply the gold-standard VARIABLE framework (Validated Assessment of Recommended Indicators And Best-practice Longitudinal Evaluation) for this patient:
-    
+
     1. **Validate Emotional Presentation**
-       - Use emotional analysis data to establish predominant affective patterns
-       - Note congruence or incongruence between communication channels
-       - Identify potential emotional masking, blunting, or inappropriate affect
-    
+       - Use the detailed emotion analysis data above to establish affective patterns
+       - Note the distribution across all measured emotions and their temporal trends
+       - Identify fluctuations, transitions, and potential patterns
+
     2. **Assess DSM-5-TR Diagnostic Criteria**
        - Map emotional presentation to potential diagnostic categories with comprehensive differential consideration
        - Evaluate symptom duration, frequency, and impact on functioning
        - Consider age-specific and gender-specific presentation variations based on the latest research
-    
+
     3. **Recognize Comorbid Conditions**
        - Identify potential co-occurring conditions common with the presenting symptoms
        - Evaluate for medical conditions that may contribute to psychiatric presentation
        - Consider substance use, neurological factors, and psychosocial stressors
-    
+
     4. **Implement Evidence-Based Screening**
        - Apply validated assessment tools appropriate for the presenting symptoms
        - Consider PHQ-9, GAD-7, MDQ, PCL-5, or other relevant measures based on presentation
        - Determine severity metrics according to standardized scales
-    
+
     5. **Apply Biopsychosocial Formulation**
        - Integrate biological, psychological, and social factors into a cohesive clinical understanding
        - Consider genetic predispositions, trauma history, developmental factors, and environmental influences
        - Evaluate resilience factors and protective elements
-    
+
     6. **Build Evidence-Based Treatment Recommendations**
        - Recommend first-line, second-line, and adjunctive therapies based on current clinical practice guidelines
        - Consider psychotherapeutic modalities with strongest empirical support for the specific condition
        - Address lifestyle modifications with documented efficacy for the presenting condition
        - Consider pharmacological approaches when clinically indicated, focusing on medication classes rather than specific medications
-    
+
     7. **Link to Longitudinal Care Planning**
        - Recommend appropriate follow-up intervals based on presentation severity
        - Specify objective outcome measures for treatment monitoring
        - Identify warning signs requiring urgent reassessment
-    
+
     ## OUTPUT FORMAT REQUIREMENTS
-    
+
     Provide a comprehensive psychiatric assessment in precise JSON format according to these exact specifications:
-    
+
     ```json
     {{
         "patient_information": {{
@@ -167,7 +184,7 @@ def create_analysis_prompt(
             "gender": "{patient_gender}",
             "assessment_date": "{today_date}"
         }},
-        "mental_health_assessment": "Detailed clinical formulation with DSM-5-TR-aligned observations, noting specific emotional patterns, cognitive features, behavioral manifestations, and physiological symptoms. Include premorbid functioning if relevant.",
+        "mental_health_assessment": "Detailed clinical formulation with DSM-5-TR-aligned observations, noting specific emotional patterns identified in the analysis, cognitive features, behavioral manifestations, and physiological symptoms. Include premorbid functioning if relevant.",
         "differential_diagnosis": "Primary and alternative diagnostic considerations with explicit DSM-5-TR criteria referenced. Include rule-out conditions and clinical reasoning.",
         "condition": "Most likely primary psychiatric diagnosis with specifiers",
         "severity": "Mild/Moderate/Severe/Very Severe with quantitative severity metrics when applicable",
@@ -179,10 +196,10 @@ def create_analysis_prompt(
         "prognosis": "Evidence-based outlook with treatment adherence and key prognostic factors noted"
     }}
     ```
-    
+
     Maintain precise clinical language, adhere to current psychiatric best practices, and provide an assessment that would meet the highest standards of clinical documentation. Avoid colloquial language, maintain professional terminology, and ensure all clinical impressions are substantiated by the presented data.
     """
-    
+
     return prompt
 
 def create_prescription_prompt(
@@ -439,3 +456,4 @@ def create_chat_prompt(
     """
     
     return prompt
+
