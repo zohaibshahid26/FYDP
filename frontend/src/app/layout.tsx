@@ -41,14 +41,7 @@ export default function RootLayout({
                       Home
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                    href="/Analysis"
-                    className="text-gray-600 hover:text-blue-600 transition-colors"
-                    >
-                    Disease Detection
-                  </Link>
-                  </li>
+
                   <li>
                     <Link
                       href="/psychiatrist"
@@ -63,6 +56,14 @@ export default function RootLayout({
                       className="text-gray-600 hover:text-blue-600 transition-colors"
                     >
                       Fall Detection
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/disease-detection"
+                      className="text-gray-600 hover:text-blue-600 transition-colors"
+                    >
+                      Disease Detection
                     </Link>
                   </li>
                   <li>
@@ -106,6 +107,14 @@ export default function RootLayout({
                       className="text-blue-200 hover:text-white transition-colors"
                     >
                       Fall Detection
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/disease-detection"
+                      className="text-blue-200 hover:text-white transition-colors"
+                    >
+                      Disease Detection
                     </Link>
                   </li>
                 </ul>
