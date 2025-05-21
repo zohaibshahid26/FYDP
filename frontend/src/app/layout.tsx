@@ -41,7 +41,14 @@ export default function RootLayout({
                       Home
                     </Link>
                   </li>
-
+                  <li>
+                    <Link
+                    href="/Analysis"
+                    className="text-gray-600 hover:text-blue-600 transition-colors"
+                    >
+                    Disease Detection
+                  </Link>
+                  </li>
                   <li>
                     <Link
                       href="/psychiatrist"
