@@ -1,12 +1,14 @@
 # Regular imports
 import genai_compat 
 from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS  
+from flask_cors import CORS
+from datetime import timedelta  
 import os
 import logging
 import numpy as np
 import tensorflow as tf
 from heart_predictor import predict_cad, get_medical_analysis
+from flask_jwt_extended import JWTManager
 from utils.heart_feature_descriptions import feature_descriptions
 from modules.llm_service import generate_gemini_response
 from modules.rag_service import retrieve_similar_content, load_conversation_dataset
@@ -37,6 +39,14 @@ app = Flask(__name__)
 
 # Configure CORS properly - ensure credentials are supported and all origins
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
+# JWT Configuration
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default-dev-key-replace-in-production')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(seconds=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 3600)))  # 1 hour default
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(seconds=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES', 2592000)))  # 30 days default
+
+# Initialize JWT
+jwt = JWTManager(app)
 
 # Define upload and output directories
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
@@ -855,6 +865,10 @@ def initialize_rag():
         print("RAG system initialized successfully!")
     except Exception as e:
         print(f"Error initializing RAG system: {e}")
+
+# Register auth blueprint
+from routes.auth_routes import auth_bp
+app.register_blueprint(auth_bp)
 
 if not app.debug:
     with app.app_context():

@@ -11,3 +11,7 @@ pandas
 langchain-community
 langchain-text-splitters
 faiss-cpu
+pymongo
+flask-jwt-extended
+bcrypt
+email-validator
