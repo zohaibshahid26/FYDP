@@ -1,12 +1,24 @@
 # Regular imports
+import genai_compat 
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS  
 import os
 import logging
+import numpy as np
+import tensorflow as tf
+from heart_predictor import predict_cad, get_medical_analysis
+from utils.heart_feature_descriptions import feature_descriptions
 from modules.llm_service import generate_gemini_response
 from modules.rag_service import retrieve_similar_content, load_conversation_dataset
 from modules.prompts import create_analysis_prompt, create_prescription_prompt, create_chat_prompt
 from modules.report_service import generate_pdf_report
+from utils.preprocessing import preprocess_input
+from utils.field_descriptions import FIELD_DESCRIPTIONS, VALID_VALUES
+from models.model import model, scaler_mean, scaler_scale, encoder_categories, prep_info
+from utils.analysis import generate_cohere_analysis_heart
+from utils.ecg_processing import extract_signal_from_image
+from utils.analysis_generator import generate_cohere_analysis
+from werkzeug.utils import secure_filename
 from datetime import datetime
 from dotenv import load_dotenv
 from io import BytesIO
@@ -249,6 +261,115 @@ def analyze_emotions():
             'timestamp': datetime.now().isoformat()
         }), 500
 
+@app.route('/test', methods=['GET'])
+def testing():
+    prescription = {}  # define the dictionary
+    prescription['patient_information'] = {
+        'name': 'abc',
+        'age': '12',
+        'gender': 'male'
+    }
+    return jsonify(prescription)
+# Upload folder
+UPLOAD_FOLDER = 'uploads/images'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Load the trained model
+model_ = tf.keras.models.load_model("models/ecg_arrhythmia_model.h5")
+
+# Class map
+class_map = {
+    0: "Normal beat",
+    1: "Supraventricular ectopic beat",
+    2: "Ventricular ectopic beat",
+    3: "Fusion beat",
+    4: "Unknown beat"
+}
+
+@app.route('/predict_arrhythmia', methods=['POST'])
+def predict_arrhythmia():
+    print("Inside arrhythmia function")
+    try:
+        if 'file' not in request.files:
+            print(" No file part in request")
+            return jsonify({'error': 'No file part in the request'}), 400
+
+        file = request.files['file']
+        print("File received")
+
+        if file.filename == '':
+            print(" No file selected")
+            return jsonify({'error': 'No file selected'}), 400
+
+        image_bytes = file.read()
+        print(" Image bytes read")
+
+        ecg_input = extract_signal_from_image(image_bytes)
+        print(" ECG signal extracted")
+
+        prediction_probs = model_.predict(ecg_input)
+        pred_class = int(np.argmax(prediction_probs, axis=1)[0])
+        pred_confidence = float(prediction_probs[0][pred_class])
+        print(f"Prediction: {pred_class} with confidence {pred_confidence}")
+
+        analysis = generate_cohere_analysis(ecg_input.squeeze(), pred_class,class_map)
+
+        return jsonify({
+            'prediction': class_map[pred_class],
+            'confidence': f"{pred_confidence * 100:.2f}%",
+            'analysis': analysis
+        })
+
+    except Exception as e:
+        print(f"Exception: {e}")
+        return jsonify({'error': str(e)}), 500
+
+NUMERIC_FEATURES = ["Age", "RestingBP", "Cholesterol", "FastingBS", "MaxHR", "Oldpeak"]
+
+@app.route("/predict-heart-disease-failure", methods=["POST"])
+def predict_heart_disease_failure():
+    try:
+        input_data = request.get_json()
+
+        # Ensure all required fields are present
+        missing = [key for key in prep_info["feature_order"] if key not in input_data]
+        if missing:
+            return jsonify({"error": f"Missing fields: {missing}"}), 400
+
+        # Cast numeric fields to float and update input_data
+        for key in NUMERIC_FEATURES:
+            try:
+                input_data[key] = float(input_data[key])
+            except (ValueError, TypeError):
+                return jsonify({"error": f"Invalid value for {key}: expected numeric"}), 400
+        print(f"Input: {input_data}")
+        print(f"Prep Info: {prep_info}")
+        # Proceed with preprocessing and prediction
+        X = preprocess_input(input_data, prep_info, scaler_mean, scaler_scale, encoder_categories)
+
+        prob = float(model.predict(X, verbose=0)[0][0])
+        risk = "HIGH" if prob > 0.5 else "LOW"
+        top_factors = list(input_data.keys())[:3]  # Replace with SHAP or feature importance later
+
+        analysis = generate_cohere_analysis_heart(input_data, risk, prob, top_factors)
+
+        return jsonify({
+            "risk": risk,
+            "probability": prob,
+            "top_factors": top_factors,
+            "analysis": analysis
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/info", methods=["GET"])
+def info():
+    return jsonify({
+        "field_descriptions": FIELD_DESCRIPTIONS,
+        "valid_values": VALID_VALUES
+    })
+
 @app.route('/generate_prescription', methods=['POST'])
 def generate_prescription():
     data = request.json
@@ -400,6 +521,27 @@ def chat_with_ai():
             'message': "I'm sorry, but I couldn't process your message due to a technical issue. Please try again in a moment.",
             'timestamp': datetime.now().isoformat()
         }), 200
+
+@app.route('/predict_cad', methods=['POST'])
+def predict():
+
+    try:
+        input_data = request.get_json()
+
+        prediction, diagnosis, user_df = predict_cad(input_data)
+        analysis = get_medical_analysis(diagnosis, user_df)
+        
+        return jsonify({
+            'prediction_probability': float(prediction),
+            'diagnosis': diagnosis,
+            'analysis': analysis
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/feature_descriptions', methods=['GET'])
+def get_feature_info():
+    return jsonify(feature_descriptions)
 
 @app.route('/chat_with_file', methods=['POST'])
 def chat_with_file():
