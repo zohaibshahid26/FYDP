@@ -26,6 +26,8 @@ export default function FallDetectionPage() {
   const [detectionMode, setDetectionMode] = useState<"upload" | "live">(
     "upload"
   );
+  const [processingStage, setProcessingStage] = useState("");
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,19 +82,44 @@ export default function FallDetectionPage() {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setProcessingProgress(0);
+    setProcessingStage("Starting analysis...");
 
     try {
       if (detectionMode === "upload") {
+        // Simulate processing stages
+        const stages = [
+          { progress: 20, message: "Uploading video..." },
+          { progress: 40, message: "Preprocessing frames..." },
+          { progress: 60, message: "Applying fall detection model..." },
+          { progress: 80, message: "Analyzing movements..." },
+          { progress: 90, message: "Finalizing results..." },
+        ];
+
+        let currentStage = 0;
+        const progressInterval = setInterval(() => {
+          if (currentStage < stages.length) {
+            setProcessingProgress(stages[currentStage].progress);
+            setProcessingStage(stages[currentStage].message);
+            currentStage++;
+          }
+        }, 1500);
+
         const response = await uploadAndProcessFallDetectionVideo(videoFile!);
+
+        clearInterval(progressInterval);
+        setProcessingProgress(100);
+        setProcessingStage("Analysis complete!");
+
         if (response.error) {
           setError(response.error);
           setResult(null);
         } else {
+          // Add a small delay to show completion
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           setResult(response);
-          // No need to set video source anymore as we're not displaying the output video
         }
       } else {
-        // Live detection - just show a placeholder message for now
         setError(
           "Live detection is not implemented yet. Please use the video upload option."
         );
@@ -105,6 +132,42 @@ export default function FallDetectionPage() {
       setIsLoading(false);
     }
   };
+
+  const ProcessingOverlay = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-xl max-w-md w-full mx-4">
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+              <FiEye
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-blue-600"
+                size={20}
+              />
+            </div>
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-800">
+              {processingStage}
+            </h3>
+            <div className="mt-4 relative h-4 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="absolute top-0 left-0 h-full bg-blue-600 transition-all duration-500"
+                style={{ width: `${processingProgress}%` }}
+              ></div>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              {processingProgress}% Complete
+            </p>
+          </div>
+          <div className="text-center text-sm text-gray-500">
+            <p>Please keep this window open</p>
+            <p>Processing may take a few minutes depending on video length</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <ProtectedRoute>
@@ -395,6 +458,8 @@ export default function FallDetectionPage() {
             </div>
           </div>
         )}
+
+        {isLoading && <ProcessingOverlay />}
       </div>
     </ProtectedRoute>
   );

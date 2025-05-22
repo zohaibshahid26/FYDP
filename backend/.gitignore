@@ -5,3 +5,4 @@ __pycache__/
 .env
 models/resnet101_emotion_latest.pt
 models/wav2vec_emotion_model.pt
+.ipynb_checkpoints/

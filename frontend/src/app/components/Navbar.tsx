@@ -9,6 +9,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
   const lastScrollY = useRef(0);
   const { user, logout } = useContext(AuthContext);
   const pathname = usePathname();
@@ -19,18 +20,24 @@ export default function Navbar() {
     setIsDropdownOpen(false);
   }, [pathname]);
 
-  // Handle smart scroll effect
+  // Handle smart scroll effect and background change
   useEffect(() => {
     const controlNavbar = () => {
       if (typeof window !== "undefined") {
-        // If scrolled down more than 20px AND scrolling down
+        // Handle visibility
         if (window.scrollY > 20 && window.scrollY > lastScrollY.current) {
           setVisible(false);
-        }
-        // If scrolling up or at the top
-        else {
+        } else {
           setVisible(true);
         }
+
+        // Handle background change
+        if (window.scrollY > 10) {
+          setScrolled(true);
+        } else {
+          setScrolled(false);
+        }
+
         // Update last scroll position
         lastScrollY.current = window.scrollY;
       }
@@ -50,9 +57,9 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 bg-white shadow-md ${
-        visible ? "transform-none" : "-translate-y-full"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 
+        ${visible ? "transform-none" : "-translate-y-full"} 
+        ${scrolled ? "bg-white shadow-md" : "bg-transparent"}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
@@ -65,10 +72,10 @@ export default function Navbar() {
                 EALTH
               </Link>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
+            <div className="hidden sm:ml-12 sm:flex sm:items-center sm:space-x-8">
               <Link
                 href="/"
-                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 ${
+                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 hover:border-blue-300 ${
                   pathname === "/"
                     ? "border-blue-600 text-blue-700"
                     : "border-transparent"
@@ -78,7 +85,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/disease-detection"
-                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 ${
+                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 hover:border-blue-300 ${
                   pathname.includes("/disease-detection")
                     ? "border-blue-600 text-blue-700"
                     : "border-transparent"
@@ -88,7 +95,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/psychiatrist"
-                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 ${
+                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 hover:border-blue-300 ${
                   pathname.includes("/psychiatrist")
                     ? "border-blue-600 text-blue-700"
                     : "border-transparent"
@@ -98,7 +105,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/fall-detection"
-                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 ${
+                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 hover:border-blue-300 ${
                   pathname.includes("/fall-detection")
                     ? "border-blue-600 text-blue-700"
                     : "border-transparent"
@@ -108,7 +115,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/about"
-                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 ${
+                className={`text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all border-b-2 hover:border-blue-300 ${
                   pathname === "/about"
                     ? "border-blue-600 text-blue-700"
                     : "border-transparent"
@@ -124,26 +131,26 @@ export default function Navbar() {
                 <div>
                   <button
                     type="button"
-                    className="bg-blue-50 hover:bg-blue-100 rounded-full flex text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="bg-blue-50 hover:bg-blue-100 rounded-full flex text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-1"
                     id="user-menu"
                     aria-expanded="false"
                     aria-haspopup="true"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold shadow-md">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center text-white font-semibold shadow-md hover:shadow-lg transition-shadow">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                   </button>
                 </div>
                 {isDropdownOpen && (
                   <div
-                    className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all"
+                    className="origin-top-right absolute right-0 mt-2 w-60 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all"
                     role="menu"
                     aria-orientation="vertical"
                     aria-labelledby="user-menu"
                   >
-                    <div className="px-4 py-3 text-sm text-gray-700 border-b">
+                    <div className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100 bg-blue-50/50">
                       <p className="font-semibold">{user.name}</p>
                       <p className="text-xs text-gray-500 truncate">
                         {user.email}
@@ -194,13 +201,13 @@ export default function Navbar() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/login"
-                  className="text-gray-700 hover:text-blue-600 px-4 py-2 text-sm font-medium transition-colors rounded-md hover:bg-gray-50"
+                  className="text-gray-700 hover:text-blue-600 px-4 py-2 text-sm font-medium transition-colors rounded-md hover:bg-blue-50 border border-transparent hover:border-blue-100"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                 >
                   Sign Up
                 </Link>
@@ -255,7 +262,7 @@ export default function Navbar() {
 
       {/* Mobile menu, show/hide based on menu state */}
       {isMenuOpen && (
-        <div className="sm:hidden bg-white shadow-lg rounded-b-lg overflow-hidden transition-all">
+        <div className="sm:hidden bg-white shadow-lg rounded-b-lg overflow-hidden transition-all animate-fadeIn">
           <div className="pt-2 pb-3 space-y-1">
             <Link
               href="/"
@@ -379,7 +386,7 @@ export default function Navbar() {
                   >
                     <path
                       fillRule="evenodd"
-                      d="M3 3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm5.707 8.707a1 1 0 01-1.414 0L5.586 9H13a1 1 0 110-2H5.586l1.707-1.707a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414 0z"
+                      d="M3 3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 011-1H4a1 1 0 01-1-1V3zm5.707 8.707a1 1 0 01-1.414 0L5.586 9H13a1 1 0 110-2H5.586l1.707-1.707a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414 0z"
                       clipRule="evenodd"
                     />
                   </svg>
@@ -387,7 +394,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/signup"
-                  className="flex items-center px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-colors"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

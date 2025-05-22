@@ -1,0 +1,42 @@
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+
+.pytest_cache/
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Development files
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
+*.md
+!README.md
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Large model files that should be mounted as volumes instead
+# Add specific large model paths here if not needed at build time
+# models/large_model_*.h5
+
+# Runtime data that should be mounted as volumes
+static/
+uploads/
+vector_cache/
+
+# Tests, docs, and other non-essential files for production
+tests/
+docs/
+*.test.py

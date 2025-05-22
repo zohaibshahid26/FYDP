@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import Image from "next/image";
 
 interface PredictionResult {
   prediction: string;
@@ -67,7 +66,7 @@ export default function Page() {
 
   return (
     <div>
-      {/* Header Section */}{" "}
+      {/* Header Section */}
       <section className="disease-gradient py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center">
@@ -99,7 +98,7 @@ export default function Page() {
                   className="block font-semibold text-gray-700 mb-2"
                 >
                   Select ECG Image:
-                </label>{" "}
+                </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
                   <input
                     id="file"
@@ -187,7 +186,7 @@ export default function Page() {
                 ) : (
                   "Detect Arrhythmia"
                 )}
-              </button>{" "}
+              </button>
               {error && (
                 <div className="mt-4 bg-blue-50 text-blue-700 p-4 rounded-lg font-medium text-center">
                   {error}
@@ -205,7 +204,6 @@ export default function Page() {
             <div className="min-h-[400px] flex flex-col justify-center">
               {!result && !error && !loading && (
                 <div className="text-center py-10">
-                  {" "}
                   <div className="text-blue-300 mb-4">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -223,7 +221,7 @@ export default function Page() {
                     </svg>
                   </div>
                   <p className="text-gray-500 text-lg">
-                    Upload an ECG image and click{" "}
+                    Upload an ECG image and click
                     <strong>Detect Arrhythmia</strong> to see analysis results.
                   </p>
                 </div>
@@ -232,7 +230,6 @@ export default function Page() {
               {loading && (
                 <div className="text-center py-10">
                   <div className="animate-pulse flex flex-col items-center">
-                    {" "}
                     <div className="rounded-full bg-blue-100 h-16 w-16 mb-4 flex items-center justify-center">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -248,7 +245,7 @@ export default function Page() {
                           d="M19 14l-7 7m0 0l-7-7m7 7V3"
                         />
                       </svg>
-                    </div>{" "}
+                    </div>
                     <div className="h-4 bg-blue-100 rounded w-3/4 mb-2"></div>
                     <div className="h-4 bg-blue-100 rounded w-1/2"></div>
                   </div>
@@ -257,7 +254,7 @@ export default function Page() {
 
               {result && (
                 <div className="animate-fade-in">
-                  <div className={`p-6 mb-6 rounded-lg bg-blue-50`}>
+                  <div className="p-6 mb-6 rounded-lg bg-blue-50">
                     <div className="flex items-center mb-4">
                       <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-4">
                         <svg
@@ -309,7 +306,6 @@ export default function Page() {
             About Cardiac Arrhythmias
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {" "}
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
                 <svg
@@ -333,7 +329,7 @@ export default function Page() {
                 abnormalities in the heart's electrical impulses, causing it to
                 beat too fast, too slow, or irregularly.
               </p>
-            </div>{" "}
+            </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
                 <svg
@@ -357,7 +353,7 @@ export default function Page() {
                 ventricular fibrillation, heart blocks, and premature
                 contractions are common types of arrhythmias.
               </p>
-            </div>{" "}
+            </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
                 <svg

@@ -3,12 +3,12 @@ Authentication service for user management with JWT
 """
 import os
 import datetime
-import bcrypt
 from email_validator import validate_email, EmailNotValidError
 from flask_jwt_extended import create_access_token, create_refresh_token
 from bson.objectid import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import bcrypt
 
 # Load environment variables
 load_dotenv()
@@ -59,8 +59,9 @@ class AuthService:
     def register_user(user_data):
         """Register a new user"""
         # Hash the password
-        hashed_password = bcrypt.hashpw(user_data['password'].encode('utf-8'), bcrypt.gensalt())
-        
+        hashed_password = bcrypt.hashpw(user_data["password"].encode('utf-8'), bcrypt.gensalt())
+
+
         # Create user document
         new_user = {
             "name": user_data['name'],
@@ -82,7 +83,7 @@ class AuthService:
         # Find user by email
         user = users_collection.find_one({"email": email})
         
-        if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password']):
+        if not user or not bcrypt.checkpw(password, user["password"].encode('utf-8')):
             return None  # Authentication failed
         
         # Generate tokens

@@ -3,10 +3,6 @@ import {
   AnalysisResponse,
   GeneratePrescriptionInput,
   TreatmentResponse,
-  ChatRequestPayload,
-  ChatResponse,
-  ChatWithFileRequestPayload, // Added
-  ChatWithFileResponse, // Added
 } from "@/types/psychiatristTypes";
 
 // Base URL for API calls

@@ -1,5 +1,3 @@
-# Regular imports
-import genai_compat 
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from datetime import timedelta  
@@ -24,7 +22,6 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from dotenv import load_dotenv
 from io import BytesIO
-import base64
 from werkzeug.utils import secure_filename
 from google import genai
 import json

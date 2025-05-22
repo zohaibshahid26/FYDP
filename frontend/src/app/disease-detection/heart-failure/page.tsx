@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from "react";
+import Link from "next/link";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -115,6 +116,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState<string>("");
+  const [inferenceStage, setInferenceStage] = useState<string>("idle");
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -128,6 +130,7 @@ export default function Page() {
     setError("");
     setResult(null);
     setLoading(true);
+    setInferenceStage("validating");
 
     const payload: Record<string, string | number> = {};
 
@@ -138,20 +141,25 @@ export default function Page() {
         if (value === "" || isNaN(Number(value))) {
           setError(`Please enter a valid number for "${meta.label}".`);
           setLoading(false);
+          setInferenceStage("idle");
           return;
         }
-        payload[key] = parseFloat(value); // Use float, not int
+        payload[key] = parseFloat(value);
       } else {
         if (!value) {
           setError(`Please select a valid option for "${meta.label}".`);
           setLoading(false);
+          setInferenceStage("idle");
           return;
         }
-        payload[key] = value; // Keep categorical values as strings
+        payload[key] = value;
       }
     }
 
     try {
+      setInferenceStage("processing");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const response = await fetch(
         `${API_BASE_URL}/predict-heart-disease-failure`,
         {
@@ -161,6 +169,9 @@ export default function Page() {
         }
       );
 
+      setInferenceStage("analyzing");
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -168,8 +179,10 @@ export default function Page() {
       }
 
       setResult(data);
+      setInferenceStage("complete");
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
+      setInferenceStage("error");
     } finally {
       setLoading(false);
     }
@@ -177,13 +190,13 @@ export default function Page() {
 
   return (
     <div>
-      {/* Header Section */}{" "}
+      {/* Header Section */}
       <section className="disease-gradient py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center">
             <div className="text-center animate-fade-in">
               <h1 className="text-4xl font-bold text-gray-800 mb-4">
-                Heart <span className="text-blue-600">Failure Risk</span>{" "}
+                Heart <span className="text-blue-600">Failure Risk </span>
                 Prediction
               </h1>
               <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
@@ -194,13 +207,14 @@ export default function Page() {
           </div>
         </div>
       </section>
+
       {/* Content Section */}
       <main className="container mx-auto px-4 py-12">
         <div className="flex flex-wrap gap-8 justify-center">
           {/* Left: Form */}
           <form
             onSubmit={handleSubmit}
-            className="flex-1 min-w-[350px] max-w-[600px] bg-white rounded-2xl shadow-lg p-8 animate-fade-in-up"
+            className="flex-1 min-w-[350px] max-w-[600px] bg-white rounded-2xl shadow-lg p-8 animate-fade-in-up transition-all duration-300"
           >
             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b border-gray-200 pb-4">
               Patient Information
@@ -255,12 +269,13 @@ export default function Page() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 mt-8 rounded-lg font-bold text-white text-lg flex items-center justify-center
-                                ${
-                                  loading
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "btn-disease hover:shadow-lg"
-                                }`}
+              className={`relative w-full py-3 px-4 mt-8 rounded-lg font-bold text-white text-lg flex items-center justify-center
+                            ${
+                              loading
+                                ? "bg-gradient-to-r from-blue-400 to-indigo-400 cursor-wait"
+                                : "bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 hover:shadow-lg transform hover:-translate-y-1 transition-all"
+                            }`}
+              aria-live="polite"
             >
               {loading ? (
                 <>
@@ -284,34 +299,91 @@ export default function Page() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Predicting...
+                  {inferenceStage === "validating" && "Validating input..."}
+                  {inferenceStage === "processing" && "Processing data..."}
+                  {inferenceStage === "analyzing" &&
+                    "Analyzing health parameters..."}
                 </>
               ) : (
                 "Predict Risk"
               )}
             </button>
 
+            <div className="mt-4 text-center text-sm text-gray-500">
+              Complete all fields for an accurate prediction. Data is processed
+              securely.
+            </div>
+
             {error && (
-              <div className="mt-4 bg-blue-50 text-blue-700 p-4 rounded-lg font-medium text-center">
-                {error}
+              <div
+                className="mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg text-red-700 animate-fade-in"
+                role="alert"
+              >
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-red-400"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p>{error}</p>
+                  </div>
+                </div>
               </div>
             )}
           </form>
 
           {/* Right: Result */}
-          <section className="flex-1 min-w-[350px] max-w-[600px] bg-white rounded-2xl shadow-lg p-8 animate-fade-in-up">
+          <section className="flex-1 min-w-[350px] max-w-[600px] bg-white rounded-2xl shadow-lg p-8 animate-fade-in-up transition-all duration-300">
             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b border-gray-200 pb-4">
               Diagnosis Results
             </h2>
 
             <div className="min-h-[400px] flex flex-col justify-center">
-              {!loading && !result && (
-                <div className="text-center py-10">
-                  {" "}
-                  <div className="text-blue-300 mb-4">
+              {!loading && !result && !error && (
+                <div className="text-center py-6">
+                  <div className="mb-6 relative w-32 h-32 mx-auto">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-16 w-16 mx-auto"
+                      viewBox="0 0 24 24"
+                      className="w-full h-full text-blue-100"
+                      fill="currentColor"
+                    >
+                      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z" />
+                    </svg>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      className="w-16 h-16 text-blue-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 7v10m-5-5h10" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-3">
+                    Ready for Analysis
+                  </h3>
+                  <p className="text-gray-500 mb-6 max-w-xs mx-auto">
+                    Complete the form on the left with patient data, then click
+                    "Predict Risk" to see the heart failure risk assessment
+                    here.
+                  </p>
+                  <div className="flex items-center justify-center text-sm text-blue-600">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-1"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -319,41 +391,91 @@ export default function Page() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        strokeWidth="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
+                    Your data remains private and secure
                   </div>
-                  <p className="text-gray-500 text-lg">
-                    Enter patient details and click{" "}
-                    <strong>Predict Risk</strong> to see heart failure risk
-                    assessment.
-                  </p>
                 </div>
               )}
 
               {loading && (
-                <div className="text-center py-10">
-                  <div className="animate-pulse flex flex-col items-center">
-                    {" "}
-                    <div className="rounded-full bg-blue-100 h-16 w-16 mb-4 flex items-center justify-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-8 w-8 text-blue-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                        />
-                      </svg>
+                <div className="text-center py-10 animate-fade-in">
+                  <div className="flex flex-col items-center justify-center space-y-6">
+                    <div className="relative">
+                      {inferenceStage === "validating" && (
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                          <p className="text-blue-600 font-medium">
+                            Validating your data
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            Checking for data completeness...
+                          </p>
+                        </div>
+                      )}
+
+                      {inferenceStage === "processing" && (
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 mb-4 relative">
+                            <div className="w-full h-full border-4 border-blue-200 rounded-full"></div>
+                            <div className="absolute top-0 left-0 w-full h-full border-4 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+                          </div>
+                          <p className="text-blue-600 font-medium">
+                            Processing health data
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            Analyzing {Object.keys(formData).length}{" "}
+                            parameters...
+                          </p>
+                        </div>
+                      )}
+
+                      {inferenceStage === "analyzing" && (
+                        <div className="flex flex-col items-center">
+                          <div className="relative w-20 h-16 mb-4">
+                            <svg
+                              className="w-full h-full"
+                              viewBox="0 0 100 70"
+                              fill="none"
+                            >
+                              <path
+                                className="stroke-blue-200"
+                                d="M0,35 L20,35 L25,20 L35,50 L45,10 L55,40 L65,30 L75,35 L100,35"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
+                              <path
+                                className="stroke-blue-600 animate-ecg-wave"
+                                d="M0,35 L20,35 L25,20 L35,50 L45,10 L55,40 L65,30 L75,35 L100,35"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                                strokeDasharray="200"
+                                strokeDashoffset="200"
+                              />
+                            </svg>
+                          </div>
+                          <p className="text-blue-600 font-medium">
+                            Analyzing cardiac risk factors
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            Our model is generating predictions...
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <div className="h-4 bg-blue-100 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-blue-100 rounded w-1/2"></div>
+
+                    <div className="bg-blue-50 p-4 rounded-lg max-w-xs">
+                      <p className="text-blue-700 text-sm">
+                        {inferenceStage === "validating" &&
+                          "This usually takes just a moment..."}
+                        {inferenceStage === "processing" &&
+                          "Our AI model is evaluating the patient data..."}
+                        {inferenceStage === "analyzing" &&
+                          "Almost there! Finalizing the clinical assessment..."}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -405,7 +527,6 @@ export default function Page() {
                       )}
                     </div>
                     <div>
-                      {" "}
                       <h3
                         className={`font-bold text-lg ${
                           result.risk === "High"
@@ -456,12 +577,13 @@ export default function Page() {
           </section>
         </div>
       </main>
+
       {/* Information Section */}
-      <section className="bg-gray-50 py-12">
+      <section className="bg-gradient-to-b from-gray-50 to-white py-12">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
             About Heart Failure
-          </h2>{" "}
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
@@ -486,7 +608,7 @@ export default function Page() {
                 well as it should, causing fluid to build up in the lungs and
                 other tissues.
               </p>
-            </div>{" "}
+            </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
                 <svg
@@ -510,7 +632,7 @@ export default function Page() {
                 feet, rapid or irregular heartbeat, reduced ability to exercise,
                 and persistent cough.
               </p>
-            </div>{" "}
+            </div>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
                 <svg
