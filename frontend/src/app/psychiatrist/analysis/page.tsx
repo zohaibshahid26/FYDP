@@ -16,6 +16,7 @@ import {
   FiSave,
 } from "react-icons/fi";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function AnalysisPage() {
   const router = useRouter();
@@ -317,6 +318,31 @@ export default function AnalysisPage() {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  const ProcessingOverlay = () => (
+    <div className="fixed inset-0 backdrop-blur-[2px] bg-black/20 flex items-center justify-center z-50">
+      <div className="bg-white/80 p-8 rounded-xl max-w-md w-full mx-4 shadow-xl backdrop-blur-sm">
+        <div className="space-y-6 text-center">
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600/20 border-b-blue-600"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <FiAlertCircle className="text-blue-600" size={24} />
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">
+              Analyzing Video
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Please wait while we process your video
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -331,13 +357,14 @@ export default function AnalysisPage() {
     try {
       const formDataUpload = new FormData();
       formDataUpload.append("video", videoFile);
-
-      const patientInfo = {
-        patient_name: formData.patient_name,
-        patient_age: formData.patient_age,
-        patient_gender: formData.patient_gender,
-      };
-      formDataUpload.append("patient_info", JSON.stringify(patientInfo));
+      formDataUpload.append(
+        "patient_info",
+        JSON.stringify({
+          patient_name: formData.patient_name,
+          patient_age: formData.patient_age,
+          patient_gender: formData.patient_gender,
+        })
+      );
 
       const response = await fetch("http://localhost:5000/analyze_video", {
         method: "POST",
@@ -350,7 +377,6 @@ export default function AnalysisPage() {
 
       const result = await response.json();
       localStorage.setItem("analysisResult", JSON.stringify(result));
-
       router.push("/psychiatrist/analysis/results");
     } catch (err) {
       setError(
@@ -730,6 +756,7 @@ export default function AnalysisPage() {
           </button>
         </div>
       </form>
+      {isLoading && <ProcessingOverlay />}
     </div>
   );
 }
