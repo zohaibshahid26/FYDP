@@ -8,7 +8,7 @@ import cohere
 from dotenv import load_dotenv
 from sklearn.preprocessing import StandardScaler
 from utils.heart_feature_descriptions import feature_descriptions
-
+import joblib
 # Load environment variables and Cohere API key
 load_dotenv()
 cohere_api_key = os.getenv("COHERE_API_KEY")
@@ -18,13 +18,9 @@ if not cohere_api_key:
 # Load the trained model
 model = tf.keras.models.load_model("models/cad_model.keras")
 
-# Prepare the scaler using standard ranges (optional: load from file)
-scaler = StandardScaler()
-# These are typical CAD features; exact stats are usually learned during training
-# For demo purposes, you could manually set mean/std for each feature or use a training set
-# Here, we expect front-end to send already validated inputs, so just fit to dummy example
-example_data = pd.DataFrame([[0]*13], columns=feature_descriptions.keys())
-scaler.fit(example_data)
+
+scaler = joblib.load("models/scaler_cad.pkl")
+
 
 def predict_cad(input_data: dict):
     
@@ -32,6 +28,8 @@ def predict_cad(input_data: dict):
     scaled_input = scaler.transform(user_df)
     prediction = model.predict(scaled_input)[0][0]
     diagnosis = "Coronary Artery Disease (CAD)" if prediction > 0.5 else "No CAD"
+    print(prediction)
+    print(diagnosis)
     return prediction, diagnosis, user_df
 
 def get_medical_analysis(diagnosis: str, user_df: pd.DataFrame) -> str:
