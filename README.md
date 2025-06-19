@@ -1,4 +1,4 @@
-# Healthcare Monitoring System
+# EALTH - Smart Healthcare Monitoring and Diagnostic  System
 
 This project consists of a Flask backend API and a Next.js frontend application for healthcare monitoring.
 
